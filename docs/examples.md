@@ -125,3 +125,74 @@ CURSORPIPE_API_KEY=crsr_your_key python examples/api_key_auth.py
 ```
 
 Get your API key at [cursor.com/dashboard/cloud-agents](https://cursor.com/dashboard/cloud-agents).
+
+## Model switching
+
+Route different tasks to different models in a single client — use a fast model for classification, a powerful model for generation:
+
+```python
+import asyncio
+from cursorpipe import CursorClient
+
+async def main():
+    client = CursorClient()
+
+    # Fast model for classification
+    intent = await client.generate(
+        model="gpt-5.4-mini-medium",
+        prompt="Classify this query: 'show top 10 users by revenue'",
+        system="Reply with exactly one of: SQL_QUERY, SCHEMA_QUESTION, GREETING",
+    )
+    print(f"Intent: {intent.strip()}")
+
+    # Powerful model for the actual work
+    sql = await client.generate(
+        model="claude-4.5-sonnet-thinking",
+        prompt="Generate a PostgreSQL query for: top 10 users by revenue in 2026",
+        system="You are a PostgreSQL expert. Reply with only the SQL query.",
+    )
+    print(f"SQL:\n{sql.strip()}")
+
+    await client.close()
+
+asyncio.run(main())
+```
+
+```bash
+python examples/model_switching.py
+```
+
+## Session streaming
+
+Stream responses chunk-by-chunk within a multi-turn session — real-time output with full conversation memory:
+
+```python
+import asyncio
+from cursorpipe import CursorClient
+
+async def main():
+    client = CursorClient()
+
+    async with client.session("claude-4.5-sonnet-thinking") as session:
+        # Turn 1: stream the response
+        print("AI: ", end="")
+        async for chunk in session.stream_prompt(
+            "Write a haiku about async Python programming."
+        ):
+            print(chunk, end="", flush=True)
+        print()
+
+        # Turn 2: non-streaming follow-up — the model remembers the haiku
+        r2 = await session.prompt("Now explain the haiku you just wrote.")
+        print(f"AI: {r2.text}")
+
+        print(f"Total turns: {session.turn_count}")
+
+    await client.close()
+
+asyncio.run(main())
+```
+
+```bash
+python examples/session_streaming.py
+```

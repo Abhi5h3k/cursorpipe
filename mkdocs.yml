@@ -48,3 +48,4 @@ nav:
   - Examples: examples.md
   - API Reference: api-reference.md
   - Architecture: architecture.md
+  - Testing: testing.md

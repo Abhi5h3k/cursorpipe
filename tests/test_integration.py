@@ -10,7 +10,7 @@ Skip with: pytest -m "not integration"
 from __future__ import annotations
 
 import os
-import shutil
+import subprocess
 
 import pytest
 
@@ -30,13 +30,14 @@ def _agent_available() -> bool:
 def _auth_available() -> bool:
     if os.getenv("CURSOR_API_KEY") or os.getenv("CURSOR_AUTH_TOKEN"):
         return True
-    agent = shutil.which("agent")
-    if not agent:
+    try:
+        cmd = resolve_agent_command(CursorPipeConfig())
+        result = subprocess.run(
+            [*cmd, "status"], capture_output=True, text=True, timeout=10,
+        )
+        return result.returncode == 0
+    except (AgentNotFoundError, subprocess.TimeoutExpired, FileNotFoundError):
         return False
-    import subprocess
-
-    result = subprocess.run([agent, "status"], capture_output=True, text=True, timeout=10)
-    return result.returncode == 0
 
 
 skip_no_agent = pytest.mark.skipif(not _agent_available(), reason="Cursor agent not installed")
@@ -141,6 +142,26 @@ class TestAcpGenerate:
 @pytest.mark.integration
 @skip_no_agent
 @skip_no_auth
+class TestAcpStream:
+    """Test stream() via ACP transport."""
+
+    async def test_streaming_via_acp(self) -> None:
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.ACP))
+        chunks: list[str] = []
+        async for chunk in client.stream(
+            model="claude-4.5-sonnet-thinking",
+            prompt="Count from 1 to 5, one number per line.",
+        ):
+            chunks.append(chunk)
+        assert len(chunks) > 0, "No chunks received from ACP stream()"
+        full_text = "".join(chunks)
+        assert len(full_text) > 0
+        await client.close()
+
+
+@pytest.mark.integration
+@skip_no_agent
+@skip_no_auth
 class TestAcpSession:
     """Test multi-turn sessions via ACP."""
 
@@ -155,6 +176,25 @@ class TestAcpSession:
                 f"Session history lost — model didn't recall '42'. Got: {r2.text[:200]}"
             )
             assert session.turn_count == 2
+        await client.close()
+
+
+@pytest.mark.integration
+@skip_no_agent
+@skip_no_auth
+class TestAcpSessionStream:
+    """Test streaming within a multi-turn session."""
+
+    async def test_session_stream_prompt(self) -> None:
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.ACP))
+        async with client.session("claude-4.5-sonnet-thinking") as session:
+            chunks: list[str] = []
+            async for chunk in session.stream_prompt(
+                "Write a haiku about Python programming."
+            ):
+                chunks.append(chunk)
+            assert len(chunks) > 0, "No chunks from session stream_prompt()"
+            assert session.turn_count == 1
         await client.close()
 
 

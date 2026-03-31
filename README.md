@@ -98,6 +98,8 @@ The [`examples/`](examples/) folder has runnable scripts for every feature:
 | [`basic.py`](examples/basic.py) | Simplest prompt-response flow |
 | [`streaming.py`](examples/streaming.py) | Stream chunks to terminal in real time |
 | [`multi_turn.py`](examples/multi_turn.py) | Session with memory across turns |
+| [`model_switching.py`](examples/model_switching.py) | Per-call model selection across tasks |
+| [`session_streaming.py`](examples/session_streaming.py) | Stream responses within a multi-turn session |
 | [`api_key_auth.py`](examples/api_key_auth.py) | API key auth for scripts and CI |
 
 ```bash

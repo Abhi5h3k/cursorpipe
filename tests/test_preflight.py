@@ -10,7 +10,6 @@ Run with:  pytest tests/test_preflight.py -v
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import sys
 
@@ -85,20 +84,19 @@ class TestAuthentication:
         has_api_key = bool(os.getenv("CURSOR_API_KEY") or os.getenv("CURSORPIPE_API_KEY"))
         has_auth_token = bool(os.getenv("CURSOR_AUTH_TOKEN") or os.getenv("CURSORPIPE_AUTH_TOKEN"))
 
-        # Check if `agent login` has been done (status command)
         has_login_session = False
-        agent_path = shutil.which("agent")
-        if agent_path:
-            try:
-                result = subprocess.run(
-                    [agent_path, "status"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                has_login_session = result.returncode == 0 and "logged in" in result.stdout.lower()
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                pass
+        config = CursorPipeConfig()
+        try:
+            cmd = resolve_agent_command(config)
+            result = subprocess.run(
+                [*cmd, "status"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            has_login_session = result.returncode == 0
+        except (AgentNotFoundError, subprocess.TimeoutExpired, FileNotFoundError):
+            pass
 
         assert has_api_key or has_auth_token or has_login_session, (
             "PREREQUISITE FAILED: No Cursor authentication found.\n\n"
@@ -123,7 +121,7 @@ class TestConnectivity:
 
         env = {**os.environ, **config.resolve_auth_env()}
         result = subprocess.run(
-            [*cmd, "--print", "--mode", "ask", "--output-format", "text",
+            [*cmd, "--trust", "--print", "--mode", "ask", "--output-format", "text",
              "Reply with exactly: CURSORPIPE_OK"],
             capture_output=True,
             text=True,
