@@ -1,6 +1,14 @@
 # cursorpipe
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Cursor CLI](https://img.shields.io/badge/cursor%20cli-v2026.03.25-purple.svg)](https://cursor.com/docs/cli/installation)
+
 **Async Python client for the Cursor Agent CLI** — pipe prompts to frontier LLMs via [ACP (Agent Client Protocol)](https://cursor.com/docs/cli/acp) with persistent sessions, streaming, and per-call model selection.
+
+> **[Read the full documentation](https://abhi5h3k.github.io/cursorpipe/)**
+
+---
 
 ## Why cursorpipe?
 
@@ -17,14 +25,11 @@ If you have a [Cursor](https://cursor.com) subscription, you already have access
 - **Auto-fallback** — tries ACP first, falls back to subprocess if needed
 - **Typed everything** — Pydantic models, custom exceptions, `py.typed` for IDE support
 
+---
 
-## Prerequisites
+## Quick Start
 
-Before using cursorpipe, you need:
-
-### 1. Cursor Agent CLI
-
-Install the Cursor CLI agent ([docs](https://cursor.com/docs/cli/installation)):
+### 1. Install the Cursor Agent CLI
 
 ```bash
 # macOS / Linux / WSL
@@ -36,47 +41,24 @@ curl https://cursor.com/install -fsS | bash
 irm 'https://cursor.com/install?win32=true' | iex
 ```
 
-```bash
-# Verify installation
-agent --version
-```
+See the [official installation docs](https://cursor.com/docs/cli/installation) for more options.
 
-### 2. Authentication
-
-The Cursor agent supports two auth methods. Pick whichever fits your workflow:
-
-**Option A — Interactive login (recommended for local dev)**
+### 2. Authenticate
 
 ```bash
 agent login
 ```
 
-This opens a browser, authenticates with your Cursor account, and stores credentials locally. Once logged in, cursorpipe (and the CLI) will work without any extra env vars or keys.
-
-**Option B — API key (recommended for scripts / CI)**
+Or set an API key (get one at [cursor.com/dashboard/cloud-agents](https://cursor.com/dashboard/cloud-agents)):
 
 ```bash
-# In your .env or shell profile
-export CURSOR_API_KEY=your-api-key
+export CURSORPIPE_API_KEY=crsr_your_key_here
 ```
 
-cursorpipe passes this to the agent as a CLI flag (`--api-key`) and as an env var, so it works reliably with both ACP and subprocess transports.
+> **`.env` files** — use `CURSORPIPE_API_KEY` (pydantic-settings prefix).
+> **OS environment variables** — both `CURSORPIPE_API_KEY` and `CURSOR_API_KEY` work.
 
-> **Where do I get an API key?** From your Cursor account settings at [cursor.com](https://cursor.com). If you only use Cursor locally, `agent login` is the simplest path — no keys needed.
-
-### 3. Verify setup
-
-```bash
-# Check that the agent binary works and auth is valid
-agent status
-
-# List available models (confirms API access)
-agent --list-models
-```
-
-## Installation
-
-### From GitHub
+### 3. Install cursorpipe
 
 ```bash
 pip install git+https://github.com/Abhi5h3k/cursorpipe.git
@@ -85,59 +67,75 @@ pip install git+https://github.com/Abhi5h3k/cursorpipe.git
 uv pip install git+https://github.com/Abhi5h3k/cursorpipe.git
 ```
 
-### From local clone
-
-```bash
-git clone https://github.com/Abhi5h3k/cursorpipe.git
-cd cursorpipe
-pip install .
-```
-
-### For development
-
-```bash
-git clone https://github.com/Abhi5h3k/cursorpipe.git
-cd cursorpipe
-pip install -e ".[dev]"
-```
-
-## Quick Start
-
-### Simple completion
+### 4. Run your first prompt
 
 ```python
+import asyncio
 from cursorpipe import CursorClient
 
-client = CursorClient()
+async def main():
+    client = CursorClient()
 
-# Generate a completion
-response = await client.generate(
-    model="claude-4.5-sonnet-thinking",
-    prompt="Explain Python's GIL in one paragraph.",
-)
-print(response)
+    response = await client.generate(
+        model="claude-4.5-sonnet-thinking",
+        prompt="Explain what an API is in two sentences.",
+    )
+    print(response)
 
-await client.close()
+    await client.close()
+
+asyncio.run(main())
 ```
+
+---
+
+## Examples
+
+The [`examples/`](examples/) folder has runnable scripts for every feature:
+
+| Example | What it shows |
+|---------|---------------|
+| [`basic.py`](examples/basic.py) | Simplest prompt-response flow |
+| [`streaming.py`](examples/streaming.py) | Stream chunks to terminal in real time |
+| [`multi_turn.py`](examples/multi_turn.py) | Session with memory across turns |
+| [`api_key_auth.py`](examples/api_key_auth.py) | API key auth for scripts and CI |
+
+```bash
+# Run any example
+python examples/basic.py
+python examples/streaming.py
+```
+
+---
+
+## Features
 
 ### Per-call model selection
 
-Use different models for different tasks — pass the model on every call:
+Use different models for different tasks:
 
 ```python
-# Fast model for classification
-intent = await client.generate(
-    model="gpt-5.4-mini-medium",
-    prompt="Classify this query: 'show top 10 users'",
-    system="Reply with one of: SQL_QUERY, SCHEMA_QUESTION, GREETING",
-)
+import asyncio
+from cursorpipe import CursorClient
 
-# Smart model for complex generation
-sql = await client.generate(
-    model="claude-4.5-sonnet-thinking",
-    prompt="Generate SQL for: top 10 users by revenue in 2026",
-    system="You are a PostgreSQL expert.",
-)
+async def main():
+    client = CursorClient()
+
+    intent = await client.generate(
+        model="gpt-5.4-mini-medium",
+        prompt="Classify this query: 'show top 10 users'",
+        system="Reply with one of: SQL_QUERY, SCHEMA_QUESTION, GREETING",
+    )
+
+    sql = await client.generate(
+        model="claude-4.5-sonnet-thinking",
+        prompt="Generate SQL for: top 10 users by revenue in 2026",
+        system="You are a PostgreSQL expert.",
+    )
+
+    await client.close()
+
+asyncio.run(main())
 ```
 
 ### Streaming
@@ -148,6 +146,19 @@ async for chunk in client.stream(
     prompt="Write a detailed analysis of...",
 ):
     print(chunk, end="", flush=True)
+```
+
+### Multi-turn sessions (ACP)
+
+Sessions maintain conversation history **server-side**:
+
+```python
+async with client.session("claude-4.5-sonnet-thinking") as session:
+    r1 = await session.prompt("Generate SQL for top 10 users by revenue")
+    print(r1.text)
+
+    r2 = await session.prompt("Add a WHERE clause for date > 2026-01-01")
+    print(r2.text)  # Has full context of r1
 ```
 
 ### Chat with message history
@@ -164,53 +175,41 @@ response = await client.chat(
 )
 ```
 
-### Multi-turn sessions (ACP-powered)
-
-Sessions maintain conversation history **server-side** — no need to resend messages:
-
-```python
-async with client.session("claude-4.5-sonnet-thinking") as session:
-    r1 = await session.prompt("Generate SQL for top 10 users by revenue")
-    print(r1.text)
-
-    # Cursor remembers the full conversation
-    r2 = await session.prompt("Add a WHERE clause for date > 2026-01-01")
-    print(r2.text)  # Has full context of r1
-
-    print(f"Turns: {session.turn_count}")
-```
-
 ### Module-level convenience
 
-For quick scripts, use module-level functions (no explicit client needed):
+For quick scripts without explicit client setup:
 
 ```python
-from cursorpipe import generate, chat, close
+import asyncio
+from cursorpipe import generate, close
 
-result = await generate(
-    model="gpt-5.4-mini-medium",
-    prompt="What is 2+2?",
-)
+async def main():
+    result = await generate(
+        model="gpt-5.4-mini-medium",
+        prompt="What is 2+2?",
+    )
+    print(result)
+    await close()
 
-await close()
+asyncio.run(main())
 ```
+
+---
 
 ## Configuration
 
-All settings are loaded from environment variables (prefix `CURSORPIPE_`) or a `.env` file:
+All settings load from environment variables (prefix `CURSORPIPE_`) or a `.env` file:
 
-
-| Variable                           | Default | Description                                                       |
-| ---------------------------------- | ------- | ----------------------------------------------------------------- |
-| `CURSORPIPE_AGENT_BIN`             | `agent` | Path to the agent binary, or `agent` to search PATH               |
-| `CURSORPIPE_STRATEGY`              | `auto`  | Transport: `acp` (persistent), `subprocess` (per-request), `auto` |
-| `CURSORPIPE_DEFAULT_MODE`          | `ask`   | ACP/CLI mode: `ask` (pure LLM), `agent` (tools), `plan`           |
-| `CURSORPIPE_REQUEST_TIMEOUT_S`     | `300`   | Per-request timeout in seconds                                    |
-| `CURSORPIPE_ACP_STARTUP_TIMEOUT_S` | `30`    | Max seconds to wait for ACP process startup                       |
-| `CURSORPIPE_ACP_MAX_RESTARTS`      | `3`     | Auto-restart attempts for crashed ACP process                     |
-| `CURSORPIPE_WORKSPACE`             | `""`    | Working directory for the agent (empty = cwd)                     |
-| `CURSORPIPE_API_KEY`               | `""`    | Cursor API key (also reads `CURSOR_API_KEY`). Passed as `--api-key` CLI flag. |
-
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CURSORPIPE_AGENT_BIN` | `agent` | Path to the agent binary, or `agent` to search PATH |
+| `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp` (persistent), `subprocess` (per-request), `auto` |
+| `CURSORPIPE_DEFAULT_MODE` | `ask` | ACP/CLI mode: `ask` (pure LLM), `agent` (tools), `plan` |
+| `CURSORPIPE_REQUEST_TIMEOUT_S` | `300` | Per-request timeout in seconds |
+| `CURSORPIPE_ACP_STARTUP_TIMEOUT_S` | `30` | Max seconds to wait for ACP process startup |
+| `CURSORPIPE_ACP_MAX_RESTARTS` | `3` | Auto-restart attempts for crashed ACP process |
+| `CURSORPIPE_WORKSPACE` | `""` | Working directory for the agent (empty = cwd) |
+| `CURSORPIPE_API_KEY` | `""` | Cursor API key (also reads `CURSOR_API_KEY`). Passed as `--api-key` CLI flag. |
 
 Or pass config programmatically:
 
@@ -218,12 +217,14 @@ Or pass config programmatically:
 from cursorpipe import CursorClient, CursorPipeConfig, Strategy
 
 config = CursorPipeConfig(
-    agent_bin="/path/to/agent",
+    api_key="crsr_...",
     strategy=Strategy.ACP,
     request_timeout_s=120,
 )
 client = CursorClient(config)
 ```
+
+---
 
 ## Transport Strategies
 
@@ -249,12 +250,52 @@ Spawns a fresh `agent --print` process per request. Simpler but slower.
 
 Tries ACP first; falls back to subprocess if ACP fails. Best of both worlds.
 
+---
+
+## API Reference
+
+### CursorClient
+
+| Method | Description |
+|--------|-------------|
+| `generate(model, prompt, *, system, temperature, max_tokens, timeout_s)` | Single completion, returns `str` |
+| `chat(model, messages, *, temperature, max_tokens, timeout_s)` | Chat with message history, returns `str` |
+| `stream(model, prompt, *, system, timeout_s)` | Streaming completion, yields `str` chunks |
+| `session(model)` | Create a `CursorSession` context manager |
+| `list_models()` | Discover available models |
+| `close()` | Shut down transports |
+
+### CursorSession
+
+| Method | Description |
+|--------|-------------|
+| `prompt(text, *, timeout_s)` | Send a prompt (history preserved), returns `CompletionResult` |
+| `stream_prompt(text, *, timeout_s)` | Streaming prompt, yields `str` chunks |
+| `model` | The model for this session |
+| `session_id` | The ACP session ID |
+| `turn_count` | Number of prompts sent |
+
+### Exceptions
+
+All exceptions inherit from `CursorPipeError`:
+
+| Exception | When |
+|-----------|------|
+| `AgentNotFoundError` | Agent binary not found |
+| `AuthenticationError` | Auth failed or missing |
+| `AgentTimeoutError` | Request exceeded timeout |
+| `RateLimitError` | Cursor returned 429 |
+| `AgentCrashError` | Agent process exited unexpectedly |
+| `SessionError` | ACP session error |
+
+> Full API docs: **[abhi5h3k.github.io/cursorpipe/api-reference](https://abhi5h3k.github.io/cursorpipe/api-reference/)**
+
+---
+
 ## Testing
 
-Run the test suite to validate your setup:
-
 ```bash
-# Preflight checks first — tells you what's missing
+# Preflight checks — tells you what's missing
 pytest tests/test_preflight.py -v
 
 # Unit tests (no agent needed, fast)
@@ -267,71 +308,30 @@ pytest tests/test_integration.py -v -m integration
 pytest -v
 ```
 
-### Test markers
+---
 
+## Contributing
 
-| Marker        | What it tests                             | Needs agent? |
-| ------------- | ----------------------------------------- | ------------ |
-| `preflight`   | Prerequisites: binary, auth, connectivity | Yes          |
-| `unit`        | Config, models, NDJSON parser, errors     | No           |
-| `integration` | End-to-end: generate, stream, sessions    | Yes + auth   |
+```bash
+# Clone and install with dev dependencies
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe
+pip install -e ".[dev]"
 
+# Set up pre-commit hooks (ruff format + lint)
+pre-commit install
 
-## API Reference
+# Run linter
+ruff check .
 
-### `CursorClient`
+# Run formatter
+ruff format .
 
-
-| Method                                                                   | Description                               |
-| ------------------------------------------------------------------------ | ----------------------------------------- |
-| `generate(model, prompt, *, system, temperature, max_tokens, timeout_s)` | Single completion, returns `str`          |
-| `chat(model, messages, *, temperature, max_tokens, timeout_s)`           | Chat with message history, returns `str`  |
-| `stream(model, prompt, *, system, timeout_s)`                            | Streaming completion, yields `str` chunks |
-| `session(model)`                                                         | Create a `CursorSession` context manager  |
-| `list_models()`                                                          | Discover available models                 |
-| `close()`                                                                | Shut down transports                      |
-
-
-### `CursorSession`
-
-
-| Method                              | Description                                                   |
-| ----------------------------------- | ------------------------------------------------------------- |
-| `prompt(text, *, timeout_s)`        | Send a prompt (history preserved), returns `CompletionResult` |
-| `stream_prompt(text, *, timeout_s)` | Streaming prompt, yields `str` chunks                         |
-| `model`                             | The model for this session                                    |
-| `session_id`                        | The ACP session ID                                            |
-| `turn_count`                        | Number of prompts sent                                        |
-
-
-### Exceptions
-
-All exceptions inherit from `CursorPipeError`:
-
-
-| Exception             | When                              |
-| --------------------- | --------------------------------- |
-| `AgentNotFoundError`  | Agent binary not found            |
-| `AuthenticationError` | Auth failed or missing            |
-| `AgentTimeoutError`   | Request exceeded timeout          |
-| `RateLimitError`      | Cursor returned 429               |
-| `AgentCrashError`     | Agent process exited unexpectedly |
-| `SessionError`        | ACP session error                 |
-
-
-## Drop-in Replacement
-
-If your project already has a module with `generate()` / `chat()` / `close()` functions, cursorpipe ships a compatibility layer that matches that pattern:
-
-```python
-# Point your existing import at cursorpipe
-from cursorpipe import _compat as llm_client
-
-result = await llm_client.generate(model="...", prompt="...", system="...")
-await llm_client.close()
+# Run tests
+pytest -v
 ```
 
-No other code changes needed — the signatures are the same.
+---
 
 ## Architecture
 
@@ -351,6 +351,8 @@ CursorClient (cursorpipe)
                                                 v
                                         Claude / GPT / etc.
 ```
+
+---
 
 ## License
 
