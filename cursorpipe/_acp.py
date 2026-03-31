@@ -14,6 +14,7 @@ import json
 import logging
 import os
 from collections.abc import AsyncIterator
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from cursorpipe._config import CursorPipeConfig
@@ -28,7 +29,12 @@ from cursorpipe._resolve import resolve_agent_command
 
 logger = logging.getLogger(__name__)
 
-_CLIENT_INFO = {"name": "cursorpipe", "version": "0.1.0"}
+try:
+    _PKG_VERSION = version("cursorpipe")
+except PackageNotFoundError:
+    _PKG_VERSION = "0.0.0"
+
+_CLIENT_INFO = {"name": "cursorpipe", "version": _PKG_VERSION}
 
 
 class AcpTransport:
