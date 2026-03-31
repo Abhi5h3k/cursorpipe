@@ -24,21 +24,21 @@ Before using cursorpipe, you need:
 
 ### 1. Cursor Agent CLI
 
-Install the Cursor CLI agent:
+Install the Cursor CLI agent ([docs](https://cursor.com/docs/cli/installation)):
 
 ```bash
-# macOS / Linux
+# macOS / Linux / WSL
 curl https://cursor.com/install -fsS | bash
+```
 
+```powershell
+# Windows (PowerShell)
+irm 'https://cursor.com/install?win32=true' | iex
+```
+
+```bash
 # Verify installation
 agent --version
-```
-
-On **Windows**, the agent is typically installed at `%LOCALAPPDATA%\cursor-agent\versions\<version>\`. Set these environment variables:
-
-```
-CURSOR_AGENT_NODE=%LOCALAPPDATA%\cursor-agent\versions\<version>\node.exe
-CURSOR_AGENT_SCRIPT=%LOCALAPPDATA%\cursor-agent\versions\<version>\index.js
 ```
 
 ### 2. Authentication
@@ -76,17 +76,29 @@ agent --list-models
 
 ## Installation
 
+### From GitHub
+
 ```bash
-pip install -e ./cursorpipe
+pip install git+https://github.com/Abhi5h3k/cursorpipe.git
 
 # Or with uv
-uv add --editable ./cursorpipe
+uv pip install git+https://github.com/Abhi5h3k/cursorpipe.git
 ```
 
-For development:
+### From local clone
 
 ```bash
-pip install -e "./cursorpipe[dev]"
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe
+pip install .
+```
+
+### For development
+
+```bash
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe
+pip install -e ".[dev]"
 ```
 
 ## Quick Start

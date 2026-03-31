@@ -39,7 +39,7 @@ def _build_args(
 ) -> list[str]:
     """Build CLI arguments (without the prompt — that comes separately)."""
     auth_args = config.resolve_auth_args()
-    args = [*auth_args, "--print", "--mode", config.default_mode]
+    args = [*auth_args, "--trust", "--print", "--mode", config.default_mode]
     args.extend(["--model", model])
     if config.workspace:
         args.extend(["--workspace", config.workspace])

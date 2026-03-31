@@ -20,8 +20,8 @@ class AgentNotFoundError(CursorPipeError):
         paths = ", ".join(searched_paths) or "(none)"
         super().__init__(
             f"Cursor agent binary not found. Searched: {paths}. "
-            "Install it with `curl https://cursor.com/install -fsS | bash` "
-            "or set CURSORPIPE_AGENT_BIN / CURSOR_AGENT_NODE + CURSOR_AGENT_SCRIPT."
+            "Install it: https://cursor.com/docs/cli/installation "
+            "or set CURSORPIPE_AGENT_BIN."
         )
 
 

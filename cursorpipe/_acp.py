@@ -60,7 +60,7 @@ class AcpTransport:
     async def _start(self) -> None:
         cmd = resolve_agent_command(self._config)
         auth_args = self._config.resolve_auth_args()
-        args = [*cmd, *auth_args, "acp"]
+        args = [*cmd, *auth_args, "--trust", "acp"]
 
         env = {**os.environ, **self._config.resolve_auth_env()}
 
@@ -107,10 +107,26 @@ class AcpTransport:
         )
         logger.debug("ACP initialize result: %s", result)
 
-        auth_result = await self._send("authenticate", {"methodId": "cursor_login"})
-        if isinstance(auth_result, dict) and auth_result.get("error"):
-            raise AuthenticationError(str(auth_result["error"]))
-        logger.info("ACP authenticated successfully")
+        has_api_key = bool(
+            self._config.api_key or os.getenv("CURSOR_API_KEY", "")
+        )
+
+        if has_api_key:
+            # Pre-authenticated via --api-key CLI flag passed to `agent acp`.
+            # Skip the authenticate handshake to avoid triggering browser login.
+            logger.info("ACP pre-authenticated via API key; skipping authenticate call")
+        else:
+            auth_methods: list[dict] = result.get("authMethods", [])
+            if not auth_methods:
+                logger.info("ACP no authMethods advertised; assuming pre-authenticated via login")
+            else:
+                method_id = auth_methods[0].get("id", "cursor_login")
+                logger.info("ACP authenticating with method: %s", method_id)
+                auth_result = await self._send("authenticate", {"methodId": method_id})
+                if isinstance(auth_result, dict) and auth_result.get("error"):
+                    raise AuthenticationError(str(auth_result["error"]))
+                logger.info("ACP authenticated successfully via %s", method_id)
+
         self._initialized = True
 
     async def close(self) -> None:
