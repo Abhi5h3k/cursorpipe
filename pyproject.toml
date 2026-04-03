@@ -1,11 +1,11 @@
 [project]
 name = "cursorpipe"
 dynamic = ["version"]
-description = "Async Python client for the Cursor Agent CLI — pipe prompts to frontier LLMs via ACP with persistent sessions, streaming, and per-call model selection."
+description = "Async Python client and OpenAI-compatible HTTP server for the Cursor Agent CLI — pipe prompts to frontier LLMs via ACP with persistent sessions, streaming, and per-call model selection."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-keywords = ["cursor", "llm", "acp", "agent", "cli", "async", "streaming"]
+keywords = ["cursor", "llm", "acp", "agent", "cli", "async", "streaming", "openai", "docker", "server"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -27,6 +27,11 @@ dependencies = [
 fast = [
     "orjson>=3.10",
 ]
+server = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "sse-starlette>=2.0.0",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
@@ -37,6 +42,9 @@ docs = [
     "mkdocs-material>=9.0.0",
 ]
 
+[project.scripts]
+cursorpipe-server = "cursorpipe_server.__main__:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -45,7 +53,7 @@ build-backend = "hatchling.build"
 path = "cursorpipe/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["cursorpipe"]
+packages = ["cursorpipe", "cursorpipe_server"]
 
 [tool.ruff]
 target-version = "py311"

@@ -18,6 +18,10 @@ Install the Cursor CLI agent ([official docs](https://cursor.com/docs/cli/instal
     irm 'https://cursor.com/install?win32=true' | iex
     ```
 
+=== "Docker"
+
+    The Dockerfile handles installation automatically — skip this step.
+
 Verify it's installed:
 
 ```bash
@@ -36,7 +40,7 @@ Pick one:
 
     Opens a browser, authenticates with your Cursor account, and stores credentials locally.
 
-=== "API key (scripts / CI)"
+=== "API key (scripts / CI / Docker)"
 
     Get your key at [cursor.com/dashboard/cloud-agents](https://cursor.com/dashboard/cloud-agents), then:
 
@@ -52,29 +56,70 @@ Pick one:
         Use `CURSORPIPE_API_KEY` in `.env` files (pydantic-settings prefix).
         As an OS environment variable, both `CURSORPIPE_API_KEY` and `CURSOR_API_KEY` work.
 
-## Installation
+---
 
-=== "pip"
+## Choose your path
 
-    ```bash
-    pip install git+https://github.com/Abhi5h3k/cursorpipe.git
-    ```
+=== "Docker (any language)"
 
-=== "uv"
-
-    ```bash
-    uv pip install git+https://github.com/Abhi5h3k/cursorpipe.git
-    ```
-
-=== "From source"
+    The fastest way to get an OpenAI-compatible API running. No Python needed on the host.
 
     ```bash
     git clone https://github.com/Abhi5h3k/cursorpipe.git
     cd cursorpipe
-    pip install .
+    export CURSOR_API_KEY=crsr_your_key_here
+    docker compose up
     ```
 
-## Your first prompt
+    Test it:
+
+    ```bash
+    curl http://localhost:8080/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -d '{"model":"claude-4.5-sonnet-thinking","messages":[{"role":"user","content":"Hello!"}]}'
+    ```
+
+    See [Docker](docker.md) for full deployment docs.
+
+=== "HTTP Server (standalone)"
+
+    Run the OpenAI-compatible server without Docker:
+
+    ```bash
+    pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+    export CURSOR_API_KEY=crsr_your_key_here
+    cursorpipe-server
+    ```
+
+    Server starts on `http://localhost:8080`. See [HTTP Server](server.md) for full docs.
+
+=== "Python Library"
+
+    Install just the library (no server dependencies):
+
+    === "pip"
+
+        ```bash
+        pip install git+https://github.com/Abhi5h3k/cursorpipe.git
+        ```
+
+    === "uv"
+
+        ```bash
+        uv pip install git+https://github.com/Abhi5h3k/cursorpipe.git
+        ```
+
+    === "From source"
+
+        ```bash
+        git clone https://github.com/Abhi5h3k/cursorpipe.git
+        cd cursorpipe
+        pip install .
+        ```
+
+---
+
+## Your first prompt (Python library)
 
 Create a file called `hello.py`:
 
@@ -126,7 +171,7 @@ async def main():
 Install the `fast` extra for ~4.6x faster JSON serialization (uses Rust-backed `orjson`):
 
 ```bash
-pip install cursorpipe[fast]
+pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
 ```
 
-That's it! Check out the [Examples](examples.md) page for streaming, sessions, framework integration, and more.
+That's it! Check out the [Examples](examples.md) page for streaming, sessions, framework integration, and more. Or jump to [HTTP Server](server.md) / [Docker](docker.md) if you want the language-agnostic API.

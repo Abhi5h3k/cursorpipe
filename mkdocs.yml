@@ -1,5 +1,5 @@
 site_name: cursorpipe
-site_description: Async Python client for the Cursor Agent CLI
+site_description: Async Python client and OpenAI-compatible HTTP server for the Cursor Agent CLI
 site_url: https://abhi5h3k.github.io/cursorpipe/
 repo_url: https://github.com/Abhi5h3k/cursorpipe
 repo_name: Abhi5h3k/cursorpipe
@@ -45,6 +45,8 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - HTTP Server: server.md
+  - Docker: docker.md
   - Examples: examples.md
   - API Reference: api-reference.md
   - Architecture: architecture.md

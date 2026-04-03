@@ -1,6 +1,48 @@
 # API Reference
 
-## CursorClient
+---
+
+## HTTP API (cursorpipe-server)
+
+cursorpipe-server exposes an OpenAI-compatible HTTP API. See [HTTP Server](server.md) for full endpoint documentation.
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/chat/completions` | Chat completions (streaming + non-streaming) |
+| GET | `/v1/models` | List available models |
+| GET | `/health` | Health check |
+
+### Request schema
+
+```python
+{
+    "model": "claude-4.5-sonnet-thinking",
+    "messages": [
+        {"role": "system", "content": "..."},
+        {"role": "user", "content": "..."}
+    ],
+    "stream": false,      # true for SSE streaming
+    "temperature": 0,
+    "max_tokens": 2048
+}
+```
+
+### Server config
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CURSORPIPE_HOST` | `0.0.0.0` | Bind address |
+| `CURSORPIPE_PORT` | `8080` | Bind port |
+| `CURSORPIPE_POOL_SIZE` | `5` | Sessions to pre-create at startup |
+| `CURSORPIPE_BEARER_TOKEN` | `""` | Optional auth for incoming requests |
+
+---
+
+## Python API
+
+### CursorClient
 
 The main entry point. Handles transport selection, fallback, and resource cleanup.
 
@@ -11,7 +53,7 @@ client = CursorClient()          # auto-load config from env / .env
 client = CursorClient(config)    # explicit CursorPipeConfig
 ```
 
-### Methods
+#### Methods
 
 | Method | Description |
 |--------|-------------|
@@ -24,7 +66,7 @@ client = CursorClient(config)    # explicit CursorPipeConfig
 | `list_models()` | Discover available models |
 | `close()` | Shut down transports and release resources |
 
-### warmup()
+#### warmup()
 
 Pre-start the ACP process and fill the session dispenser. Call once at app startup to eliminate cold-start latency on the first real request.
 
@@ -35,7 +77,7 @@ await client.warmup(pool_size=5)
 Without warmup, the first request takes ~14s (process spawn + session creation + LLM).
 With warmup, the first request takes ~5s (LLM only).
 
-### generate()
+#### generate()
 
 ```python
 response = await client.generate(
@@ -48,7 +90,7 @@ response = await client.generate(
 )
 ```
 
-### chat()
+#### chat()
 
 Accepts a list of message dicts. Messages are merged into a single prompt internally.
 
@@ -64,7 +106,7 @@ response = await client.chat(
 )
 ```
 
-### stream()
+#### stream()
 
 Returns an async iterator. Use `async for` to get chunks:
 
@@ -76,7 +118,7 @@ async for chunk in client.stream(
     print(chunk, end="", flush=True)
 ```
 
-### session()
+#### session()
 
 Creates a multi-turn session with server-side history (ACP only). Use as an async context manager:
 
@@ -86,7 +128,7 @@ async with client.session("claude-4.5-sonnet-thinking") as session:
     r2 = await session.prompt("Add a WHERE clause")  # remembers r1
 ```
 
-### create_session()
+#### create_session()
 
 Creates a multi-turn session with explicit lifecycle control — ideal for frameworks like Chainlit or FastAPI where create, use, and destroy happen in different callback functions:
 
@@ -99,7 +141,7 @@ session.discard()
 
 ---
 
-## CursorSession
+### CursorSession
 
 Returned by `client.session()` or `client.create_session()`.
 
@@ -114,7 +156,7 @@ Returned by `client.session()` or `client.create_session()`.
 
 ---
 
-## CursorPipeConfig
+### CursorPipeConfig
 
 All settings are loaded from environment variables (prefix `CURSORPIPE_`) or a `.env` file.
 
@@ -142,7 +184,7 @@ config = CursorPipeConfig(
 
 ---
 
-## CompletionResult
+### CompletionResult
 
 Returned by `session.prompt()`.
 
@@ -156,7 +198,7 @@ Returned by `session.prompt()`.
 
 ---
 
-## Exceptions
+### Exceptions
 
 All exceptions inherit from `CursorPipeError`:
 
@@ -182,7 +224,7 @@ except CursorPipeError as e:
 
 ---
 
-## Module-level convenience
+### Module-level convenience
 
 For quick scripts without explicit client management:
 

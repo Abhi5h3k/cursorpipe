@@ -1,13 +1,96 @@
 # Examples
 
-All examples are runnable scripts in the [`examples/`](https://github.com/Abhi5h3k/cursorpipe/tree/main/examples) folder.
+All Python examples are runnable scripts in the [`examples/`](https://github.com/Abhi5h3k/cursorpipe/tree/main/examples) folder.
 
 !!! info "Tested with"
     - cursorpipe 0.1.0
     - Cursor Agent CLI v2026.03.25-933d5a6
     - Python 3.14
 
-## Basic completion
+---
+
+## HTTP / curl examples
+
+These work with cursorpipe-server running locally (`cursorpipe-server` or `docker compose up`).
+
+### Non-streaming completion
+
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4.5-sonnet-thinking",
+    "messages": [{"role": "user", "content": "Explain what an API is in two sentences."}]
+  }'
+```
+
+### Streaming completion
+
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-4.5-sonnet-thinking",
+    "messages": [{"role": "user", "content": "Write a haiku about Python."}],
+    "stream": true
+  }'
+```
+
+### List models
+
+```bash
+curl http://localhost:8080/v1/models
+```
+
+### With bearer token auth
+
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer my-secret-token" \
+  -d '{"model":"claude-4.5-sonnet-thinking","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+---
+
+## OpenAI SDK (against cursorpipe-server)
+
+Use the standard OpenAI Python SDK pointed at cursorpipe-server — zero code changes compared to calling OpenAI directly:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="unused")
+
+# Non-streaming
+response = client.chat.completions.create(
+    model="claude-4.5-sonnet-thinking",
+    messages=[{"role": "user", "content": "Explain what an API is in two sentences."}],
+)
+print(response.choices[0].message.content)
+
+# Streaming
+stream = client.chat.completions.create(
+    model="claude-4.5-sonnet-thinking",
+    messages=[{"role": "user", "content": "Write a haiku about Python."}],
+    stream=True,
+)
+for chunk in stream:
+    delta = chunk.choices[0].delta
+    if delta.content:
+        print(delta.content, end="", flush=True)
+print()
+```
+
+```bash
+python examples/openai_sdk.py
+```
+
+---
+
+## Python library examples
+
+### Basic completion
 
 The simplest way to get a response — one prompt, one answer:
 
@@ -33,7 +116,7 @@ asyncio.run(main())
 python examples/basic.py
 ```
 
-## Warmup (recommended for production)
+### Warmup (recommended for production)
 
 Pre-start the ACP process and pre-create sessions to eliminate the ~14s cold-start on the first request:
 
@@ -67,7 +150,7 @@ asyncio.run(main())
 python examples/warmup.py
 ```
 
-## Streaming
+### Streaming
 
 See the response appear word-by-word instead of waiting for the full answer:
 
@@ -94,7 +177,7 @@ asyncio.run(main())
 python examples/streaming.py
 ```
 
-## Multi-turn sessions
+### Multi-turn sessions
 
 Sessions keep conversation history on the server — the LLM remembers everything from previous turns:
 
@@ -126,7 +209,7 @@ asyncio.run(main())
 python examples/multi_turn.py
 ```
 
-## Framework integration (Chainlit / FastAPI)
+### Framework integration (Chainlit / FastAPI)
 
 For frameworks where session create, use, and destroy happen in different callback functions, use `create_session()` with explicit lifecycle:
 
@@ -144,7 +227,6 @@ async def on_chat_start(user_id):
     return session  # store in user session
 
 async def on_message(session, message):
-    # Server has full history — only send the new message
     async for chunk in session.stream_prompt(message):
         print(chunk, end="", flush=True)
     print()
@@ -155,10 +237,9 @@ async def on_chat_end(session):
 async def main():
     await app_startup()
 
-    # Simulate a user conversation
     session = await on_chat_start("alice")
     await on_message(session, "What is 42 * 3?")
-    await on_message(session, "Now double that.")  # server remembers the first turn
+    await on_message(session, "Now double that.")
     await on_chat_end(session)
 
     await client.close()
@@ -170,7 +251,7 @@ asyncio.run(main())
 python examples/chainlit_pattern.py
 ```
 
-## API key authentication
+### API key authentication
 
 Use an API key instead of interactive `agent login` — ideal for scripts, CI, and servers:
 
@@ -204,9 +285,9 @@ CURSORPIPE_API_KEY=crsr_your_key python examples/api_key_auth.py
 
 Get your API key at [cursor.com/dashboard/cloud-agents](https://cursor.com/dashboard/cloud-agents).
 
-## Model switching
+### Model switching
 
-Route different tasks to different models in a single client — use a fast model for classification, a powerful model for generation:
+Route different tasks to different models in a single client:
 
 ```python
 import asyncio
@@ -215,7 +296,6 @@ from cursorpipe import CursorClient
 async def main():
     client = CursorClient()
 
-    # Fast model for classification
     intent = await client.generate(
         model="gpt-5.4-mini-medium",
         prompt="Classify this query: 'show top 10 users by revenue'",
@@ -223,7 +303,6 @@ async def main():
     )
     print(f"Intent: {intent.strip()}")
 
-    # Powerful model for the actual work
     sql = await client.generate(
         model="claude-4.5-sonnet-thinking",
         prompt="Generate a PostgreSQL query for: top 10 users by revenue in 2026",
@@ -240,9 +319,9 @@ asyncio.run(main())
 python examples/model_switching.py
 ```
 
-## Session streaming
+### Session streaming
 
-Stream responses chunk-by-chunk within a multi-turn session — real-time output with full conversation memory:
+Stream responses chunk-by-chunk within a multi-turn session:
 
 ```python
 import asyncio
@@ -252,7 +331,6 @@ async def main():
     client = CursorClient()
 
     async with client.session("claude-4.5-sonnet-thinking") as session:
-        # Turn 1: stream the response
         print("AI: ", end="")
         async for chunk in session.stream_prompt(
             "Write a haiku about async Python programming."
@@ -260,7 +338,6 @@ async def main():
             print(chunk, end="", flush=True)
         print()
 
-        # Turn 2: non-streaming follow-up — the model remembers the haiku
         r2 = await session.prompt("Now explain the haiku you just wrote.")
         print(f"AI: {r2.text}")
 

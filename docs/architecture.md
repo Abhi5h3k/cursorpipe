@@ -2,13 +2,16 @@
 
 ## Overview
 
-cursorpipe sits between your Python code and the Cursor cloud API. It manages the agent process lifecycle and provides a clean async interface.
+cursorpipe has two layers: a **Python library** that manages the Cursor agent process, and an optional **HTTP server** that exposes the library as an OpenAI-compatible API.
 
 ```
-Your Python code
+Any client (Python, JS, curl, LangChain, Open WebUI ...)
+    |
+    v  HTTP (OpenAI-compatible)
+cursorpipe-server (FastAPI)           <-- optional HTTP layer
     |
     v
-CursorClient (cursorpipe)
+CursorClient (cursorpipe library)
     |
     +--> AcpTransport ----stdin/stdout----> agent acp (persistent process)
     |       |                                   |
@@ -24,6 +27,39 @@ CursorClient (cursorpipe)
                                                 |
                                                 v
                                         Claude / GPT / etc.
+```
+
+## HTTP server layer
+
+cursorpipe-server is a thin FastAPI application that translates between the OpenAI HTTP protocol and the cursorpipe Python library.
+
+**Request flow:**
+
+1. Client sends `POST /v1/chat/completions` (OpenAI format)
+2. FastAPI validates the request with Pydantic models
+3. Messages are extracted and passed to `client.generate()` or `client.stream()`
+4. Response is formatted as OpenAI JSON (or SSE chunks for streaming)
+5. cursorpipe errors are mapped to appropriate HTTP status codes
+
+**Docker deployment:**
+
+```
+┌──────────────────────────────────────────┐
+│  Docker Container                        │
+│                                          │
+│  ┌──────────────┐   ┌────────────────┐  │
+│  │  FastAPI      │──>│ CursorClient   │  │
+│  │  (uvicorn)    │   │ (cursorpipe)   │  │
+│  │  :8080        │<──│                │  │
+│  └──────┬───────┘   └───────┬────────┘  │
+│         │                    │           │
+│         │              ┌─────v────────┐  │
+│         │              │  agent acp   │  │
+│         │              │  (Cursor CLI)│  │
+│         │              └─────┬────────┘  │
+└─────────┼────────────────────┼───────────┘
+          │                    │
+     HTTP clients         Cursor Cloud API
 ```
 
 ## Transport strategies
