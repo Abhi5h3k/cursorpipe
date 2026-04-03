@@ -11,6 +11,11 @@ Your Python code
 CursorClient (cursorpipe)
     |
     +--> AcpTransport ----stdin/stdout----> agent acp (persistent process)
+    |       |                                   |
+    |       +--> SessionDispenser               |
+    |       |    (pre-created sessions)         |
+    |       +--> Notification Router            |
+    |            (routes by sessionId)          |
     |                                           |
     +--> SubprocessTransport ---spawn---->  agent --print (per request)
                                                 |
@@ -25,7 +30,7 @@ CursorClient (cursorpipe)
 
 ### ACP (recommended)
 
-Spawns a persistent `agent acp` process and communicates via stdin/stdout using JSON-RPC 2.0. Sessions are pooled per model.
+Spawns a persistent `agent acp` process and communicates via stdin/stdout using JSON-RPC 2.0.
 
 **Advantages:**
 
@@ -39,7 +44,7 @@ Spawns a persistent `agent acp` process and communicates via stdin/stdout using 
 1. `CursorClient` spawns `agent --api-key <key> --trust acp`
 2. Sends `initialize` JSON-RPC to negotiate capabilities
 3. If no API key is present, sends `authenticate` with the method from the server
-4. Creates sessions via `session/new`
+4. Creates sessions via `session/new` (pre-created by the session dispenser)
 5. Sends prompts via `session/prompt`, receives streaming updates via `session/update` notifications
 6. Handles `session/request_permission` for tool approvals
 
@@ -62,6 +67,49 @@ Spawns a fresh `agent --print` process per request. Simpler but slower.
 
 Tries ACP first. If ACP fails (crash, timeout, etc.), falls back to subprocess transparently. Best of both worlds.
 
+## Session dispenser
+
+Every ACP session maintains conversation history server-side. To guarantee isolation between requests and users, cursorpipe uses a **session dispenser** instead of a traditional session pool:
+
+```
+warmup(pool_size=5)
+    |
+    v
+SessionDispenser
+    |
+    +-- [sess-1] [sess-2] [sess-3] [sess-4] [sess-5]  (virgin, no history)
+    |
+generate() --> acquire() --> pops sess-1 --> uses it --> DISCARDED (not returned)
+    |
+    +-- Background refill creates sess-6 to replace it
+    |
+create_session() --> acquire() --> pops sess-2 --> held by user --> discard()
+```
+
+**Key design decisions:**
+
+- **No release method** — used sessions are discarded, never returned to the queue. This structurally guarantees that no conversation history leaks between requests or users.
+- **Background refill** — after each acquire, a background task creates new sessions to keep the queue at its target size.
+- **Fallback creation** — if the queue is empty, a session is created on-demand (slower, with a logged warning).
+
+## Notification routing
+
+ACP notifications (`session/update`) carry a `sessionId` field. cursorpipe routes each notification to the queue subscribed for that specific session, preventing response chunks from one request leaking into another:
+
+```
+Agent stdout --> _read_loop() --> _dispatch()
+                                      |
+                    +-----------------+-----------------+
+                    |                                   |
+              (session/update,           (session/update,
+               sessionId=sess-A)          sessionId=sess-B)
+                    |                                   |
+                    v                                   v
+              Queue for request A              Queue for request B
+```
+
+This is critical for concurrent requests — without session-scoped routing, chunks from different model responses would interleave.
+
 ## Authentication flow
 
 cursorpipe supports two auth paths:
@@ -71,6 +119,13 @@ The key is passed as `--api-key <key>` when spawning the agent. The ACP handshak
 
 **Login session (interactive):**
 Relies on credentials stored by `agent login`. During ACP initialization, the `authenticate` JSON-RPC call confirms the session. If no valid session exists, the agent may open a browser for login.
+
+## Performance optimizations
+
+- **orjson fast-path** — optional Rust-backed JSON parser (~4.6x faster). Install with `pip install cursorpipe[fast]`.
+- **Streaming overhaul** — uses `asyncio.wait()` to race chunk arrival against prompt completion, eliminating the 1s poll delay from the previous `wait_for` approach.
+- **256KB StreamReader buffer** — prevents backpressure stalls during burst chunk delivery.
+- **Profiling mode** — set `CURSORPIPE_ENABLE_PROFILING=true` to log time-to-first-chunk, per-chunk inter-arrival, and total streaming duration.
 
 ## File resolution (Windows)
 

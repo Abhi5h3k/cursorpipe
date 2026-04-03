@@ -225,3 +225,77 @@ class TestAutoFallback:
         )
         assert len(result) > 0
         await client.close()
+
+
+@pytest.mark.integration
+@skip_no_agent
+@skip_no_auth
+class TestWarmup:
+    """Test warmup pre-creates sessions for zero cold-start."""
+
+    async def test_warmup_then_generate(self) -> None:
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.ACP))
+        await client.warmup(pool_size=2)
+
+        acp = client._get_acp()
+        assert acp.dispenser.available >= 1, "Warmup should pre-create sessions"
+
+        result = await client.generate(
+            model="claude-4.5-sonnet-thinking",
+            prompt="Reply with exactly: WARMUP_OK",
+        )
+        assert len(result) > 0
+        await client.close()
+
+
+@pytest.mark.integration
+@skip_no_agent
+@skip_no_auth
+class TestExplicitSession:
+    """Test create_session() with explicit lifecycle."""
+
+    async def test_create_and_discard(self) -> None:
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.ACP))
+        await client.warmup(pool_size=2)
+
+        session = await client.create_session("claude-4.5-sonnet-thinking")
+        assert session.session_id is not None
+
+        r1 = await session.prompt("Remember this number: 99. Just say OK.")
+        assert len(r1.text) > 0
+
+        r2 = await session.prompt("What number did I ask you to remember?")
+        assert "99" in r2.text
+
+        session.discard()
+        assert session.session_id is None
+
+        await client.close()
+
+
+@pytest.mark.integration
+@skip_no_agent
+@skip_no_auth
+class TestSessionIsolation:
+    """Test that different sessions don't share history."""
+
+    async def test_two_sessions_isolated(self) -> None:
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.ACP))
+        await client.warmup(pool_size=3)
+
+        s1 = await client.create_session("claude-4.5-sonnet-thinking")
+        s2 = await client.create_session("claude-4.5-sonnet-thinking")
+
+        assert s1.session_id != s2.session_id, "Sessions must have different IDs"
+
+        await s1.prompt("Remember this secret word: BANANA. Just say OK.")
+        r2 = await s2.prompt(
+            "Do you know any secret word I told you? Reply with YES or NO only."
+        )
+        assert "NO" in r2.text.upper(), (
+            f"Session s2 should not know about BANANA. Got: {r2.text[:200]}"
+        )
+
+        s1.discard()
+        s2.discard()
+        await client.close()

@@ -65,6 +65,7 @@ __all__ = [
     # Module-level convenience
     "generate",
     "chat",
+    "warmup",
     "close",
 ]
 
@@ -111,6 +112,11 @@ async def chat(
         model=model, messages=messages,
         temperature=temperature, max_tokens=max_tokens,
     )
+
+
+async def warmup(pool_size: int = 5) -> None:
+    """Pre-start the ACP process and fill the session dispenser."""
+    await _get_default().warmup(pool_size=pool_size)
 
 
 async def close() -> None:

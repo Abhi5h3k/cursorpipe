@@ -1,8 +1,9 @@
 """CursorClient — the main entry point for cursorpipe.
 
-Provides ``generate()``, ``chat()``, ``stream()``, and ``session()`` with
-per-call model selection.  Dispatches to the ACP transport (persistent) or
-subprocess transport (per-request) based on the configured strategy.
+Provides ``generate()``, ``chat()``, ``stream()``, ``session()``,
+``create_session()``, and ``warmup()`` with per-call model selection.
+Dispatches to the ACP transport (persistent) or subprocess transport
+(per-request) based on the configured strategy.
 """
 
 from __future__ import annotations
@@ -79,6 +80,25 @@ class CursorClient:
         return True  # AUTO defaults to ACP
 
     # ------------------------------------------------------------------
+    # Warmup
+    # ------------------------------------------------------------------
+
+    async def warmup(self, pool_size: int = 5) -> None:
+        """Pre-start the ACP process and fill the session dispenser.
+
+        Call once at app startup (e.g., FastAPI lifespan, Chainlit startup)
+        to eliminate cold-start latency on the first real request.
+
+        Parameters
+        ----------
+        pool_size : int
+            Number of virgin sessions to pre-create.
+        """
+        acp = self._get_acp()
+        await acp.ensure_started()
+        await acp.dispenser.warm(pool_size)
+
+    # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
@@ -138,7 +158,8 @@ class CursorClient:
 
         Messages are flattened into a single prompt since the Cursor CLI
         doesn't accept multi-message arrays natively.  For true multi-turn
-        with server-side history, use ``session()`` instead.
+        with server-side history, use ``session()`` or ``create_session()``
+        instead.
         """
         flat = _messages_to_prompt(messages)
         return await self.generate(
@@ -177,13 +198,35 @@ class CursorClient:
     def session(self, model: str) -> CursorSession:
         """Create a multi-turn session with server-side history (ACP only).
 
-        Usage::
+        Usage as a context manager::
 
             async with client.session("claude-4.5-sonnet-thinking") as s:
                 r1 = await s.prompt("Generate SQL for ...")
                 r2 = await s.prompt("Now add a WHERE clause")
         """
         return CursorSession(self._get_acp(), model)
+
+    async def create_session(self, model: str) -> CursorSession:
+        """Create a multi-turn session with explicit lifecycle control.
+
+        Unlike ``session()`` (a context manager), this returns a ready-to-use
+        session that you manage yourself — ideal for frameworks like Chainlit
+        or FastAPI where creation, usage, and cleanup happen in different
+        callback functions.
+
+        Call ``session.discard()`` when done.
+
+        Usage::
+
+            session = await client.create_session("claude-4.5-sonnet-thinking")
+            r1 = await session.prompt("Generate SQL for ...")
+            r2 = await session.prompt("Now add a WHERE clause")
+            session.discard()
+        """
+        acp = self._get_acp()
+        await acp.ensure_started()
+        sid = await acp.dispenser.acquire()
+        return CursorSession(acp, model, session_id=sid)
 
     async def list_models(self) -> list[str]:
         """Discover available models via ``agent --list-models``."""

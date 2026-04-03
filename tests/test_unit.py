@@ -1,12 +1,15 @@
 """Unit tests — fast, no external dependencies.
 
-Tests the internal components (config, models, resolve, NDJSON parser, errors)
-without needing a Cursor agent binary or network access.
+Tests the internal components (config, models, resolve, NDJSON parser, errors,
+session dispenser, JSON fast-path, and notification routing) without needing a
+Cursor agent binary or network access.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -80,6 +83,14 @@ class TestConfig:
         monkeypatch.setenv("CURSOR_API_KEY", "env-key-456")
         cfg = CursorPipeConfig()
         assert cfg.resolve_auth_args() == ["--api-key", "env-key-456"]
+
+    def test_enable_profiling_default_false(self) -> None:
+        cfg = CursorPipeConfig()
+        assert cfg.enable_profiling is False
+
+    def test_enable_profiling_set(self) -> None:
+        cfg = CursorPipeConfig(enable_profiling=True)
+        assert cfg.enable_profiling is True
 
 
 # =========================================================================
@@ -265,3 +276,170 @@ class TestStreamAccumulator:
         assert d == "The final answer"
         assert acc.text == "The final answer"
         assert acc.done
+
+
+# =========================================================================
+# JSON fast-path (_json.py)
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestJsonFastpath:
+    def test_loads_parses_valid_json(self) -> None:
+        from cursorpipe._json import loads
+        result = loads('{"key": "value", "num": 42}')
+        assert result == {"key": "value", "num": 42}
+
+    def test_dumps_serializes_dict(self) -> None:
+        from cursorpipe._json import dumps
+        result = dumps({"key": "value"})
+        parsed = json.loads(result)
+        assert parsed == {"key": "value"}
+
+    def test_loads_raises_on_invalid_json(self) -> None:
+        from cursorpipe._json import loads
+        with pytest.raises((ValueError, TypeError)):
+            loads("not valid json {{{")
+
+    def test_roundtrip(self) -> None:
+        from cursorpipe._json import dumps, loads
+        original = {"jsonrpc": "2.0", "id": 1, "method": "session/new"}
+        assert loads(dumps(original)) == original
+
+
+# =========================================================================
+# Session Dispenser (_pool.py)
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestSessionDispenser:
+    def _make_dispenser(self, session_ids: list[str] | None = None):
+        """Create a dispenser with a mock transport."""
+        from cursorpipe._pool import SessionDispenser
+
+        mock_transport = MagicMock()
+        ids = list(session_ids or [f"sess-{i}" for i in range(20)])
+        mock_transport.create_session_raw = AsyncMock(side_effect=ids)
+
+        dispenser = SessionDispenser(mock_transport, target_size=3)
+        return dispenser, mock_transport
+
+    async def test_warm_fills_queue(self) -> None:
+        dispenser, transport = self._make_dispenser()
+        await dispenser.warm(3)
+        assert dispenser.available == 3
+        assert transport.create_session_raw.call_count == 3
+
+    async def test_acquire_returns_prewarmed_session(self) -> None:
+        dispenser, _ = self._make_dispenser()
+        await dispenser.warm(2)
+        sid = await dispenser.acquire()
+        assert sid == "sess-0"
+        assert dispenser.available == 1
+
+    async def test_acquire_when_empty_creates_on_demand(self) -> None:
+        dispenser, transport = self._make_dispenser()
+        sid = await dispenser.acquire()
+        assert sid == "sess-0"
+        assert transport.create_session_raw.call_count >= 1
+
+    async def test_sessions_are_unique(self) -> None:
+        dispenser, _ = self._make_dispenser()
+        await dispenser.warm(5)
+        acquired = set()
+        for _ in range(5):
+            sid = await dispenser.acquire()
+            assert sid not in acquired
+            acquired.add(sid)
+
+    async def test_close_prevents_further_acquire(self) -> None:
+        dispenser, _ = self._make_dispenser()
+        await dispenser.warm(2)
+        dispenser.close()
+        with pytest.raises(SessionError):
+            await dispenser.acquire()
+
+    async def test_close_drains_queue(self) -> None:
+        dispenser, _ = self._make_dispenser()
+        await dispenser.warm(3)
+        assert dispenser.available == 3
+        dispenser.close()
+        assert dispenser.available == 0
+
+
+# =========================================================================
+# Notification routing by sessionId
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestNotificationRouting:
+    def _make_transport(self):
+        """Create a minimal AcpTransport-like object for testing dispatch."""
+        from cursorpipe._acp import AcpTransport
+        from cursorpipe._config import CursorPipeConfig
+
+        cfg = CursorPipeConfig()
+        transport = AcpTransport(cfg)
+        return transport
+
+    def test_subscribe_returns_queue(self) -> None:
+        transport = self._make_transport()
+        queue = transport._subscribe("session/update", "sess-abc")
+        assert isinstance(queue, asyncio.Queue)
+
+    def test_dispatch_routes_to_correct_session(self) -> None:
+        transport = self._make_transport()
+        q1 = transport._subscribe("session/update", "sess-A")
+        q2 = transport._subscribe("session/update", "sess-B")
+
+        msg_a = {
+            "method": "session/update",
+            "params": {
+                "sessionId": "sess-A",
+                "update": {"sessionUpdate": "agent_message_chunk", "content": {"text": "hello"}},
+            },
+        }
+        msg_b = {
+            "method": "session/update",
+            "params": {
+                "sessionId": "sess-B",
+                "update": {"sessionUpdate": "agent_message_chunk", "content": {"text": "world"}},
+            },
+        }
+
+        transport._dispatch(msg_a)
+        transport._dispatch(msg_b)
+
+        assert q1.qsize() == 1
+        assert q2.qsize() == 1
+        assert q1.get_nowait() == msg_a
+        assert q2.get_nowait() == msg_b
+
+    def test_dispatch_does_not_cross_sessions(self) -> None:
+        transport = self._make_transport()
+        q1 = transport._subscribe("session/update", "sess-X")
+
+        msg_other = {
+            "method": "session/update",
+            "params": {
+                "sessionId": "sess-Y",
+                "update": {"sessionUpdate": "agent_message_chunk", "content": {"text": "nope"}},
+            },
+        }
+        transport._dispatch(msg_other)
+
+        assert q1.empty()
+
+    def test_unsubscribe_removes_queue(self) -> None:
+        transport = self._make_transport()
+        q = transport._subscribe("session/update", "sess-Z")
+        transport._unsubscribe("session/update", "sess-Z", q)
+
+        msg = {
+            "method": "session/update",
+            "params": {"sessionId": "sess-Z", "update": {}},
+        }
+        transport._dispatch(msg)
+        assert q.empty()

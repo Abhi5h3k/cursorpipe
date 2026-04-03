@@ -15,12 +15,25 @@ client = CursorClient(config)    # explicit CursorPipeConfig
 
 | Method | Description |
 |--------|-------------|
+| `warmup(pool_size=5)` | Pre-start ACP process and pre-create sessions |
 | `generate(model, prompt, *, system, temperature, max_tokens, timeout_s)` | Single completion, returns `str` |
 | `chat(model, messages, *, temperature, max_tokens, timeout_s)` | Chat with message history, returns `str` |
 | `stream(model, prompt, *, system, timeout_s)` | Streaming completion, yields `str` chunks |
 | `session(model)` | Create a `CursorSession` context manager |
+| `create_session(model)` | Create a `CursorSession` with explicit lifecycle |
 | `list_models()` | Discover available models |
 | `close()` | Shut down transports and release resources |
+
+### warmup()
+
+Pre-start the ACP process and fill the session dispenser. Call once at app startup to eliminate cold-start latency on the first real request.
+
+```python
+await client.warmup(pool_size=5)
+```
+
+Without warmup, the first request takes ~14s (process spawn + session creation + LLM).
+With warmup, the first request takes ~5s (LLM only).
 
 ### generate()
 
@@ -65,7 +78,7 @@ async for chunk in client.stream(
 
 ### session()
 
-Creates a multi-turn session with server-side history (ACP only):
+Creates a multi-turn session with server-side history (ACP only). Use as an async context manager:
 
 ```python
 async with client.session("claude-4.5-sonnet-thinking") as session:
@@ -73,16 +86,28 @@ async with client.session("claude-4.5-sonnet-thinking") as session:
     r2 = await session.prompt("Add a WHERE clause")  # remembers r1
 ```
 
+### create_session()
+
+Creates a multi-turn session with explicit lifecycle control — ideal for frameworks like Chainlit or FastAPI where create, use, and destroy happen in different callback functions:
+
+```python
+session = await client.create_session("claude-4.5-sonnet-thinking")
+r1 = await session.prompt("Generate SQL for top 10 users")
+r2 = await session.prompt("Add a WHERE clause")
+session.discard()
+```
+
 ---
 
 ## CursorSession
 
-Returned by `client.session()`. Use as an async context manager.
+Returned by `client.session()` or `client.create_session()`.
 
 | Property / Method | Description |
 |-------------------|-------------|
 | `prompt(text, *, timeout_s)` | Send a prompt (history preserved), returns `CompletionResult` |
 | `stream_prompt(text, *, timeout_s)` | Streaming prompt, yields `str` chunks |
+| `discard()` | Release this session (no-op if already discarded) |
 | `model` | The model for this session |
 | `session_id` | The ACP session ID |
 | `turn_count` | Number of prompts sent |
@@ -113,6 +138,7 @@ config = CursorPipeConfig(
 | `CURSORPIPE_ACP_MAX_RESTARTS` | `3` | Auto-restart attempts for crashed ACP |
 | `CURSORPIPE_WORKSPACE` | `""` | Working directory for the agent |
 | `CURSORPIPE_API_KEY` | `""` | Cursor API key (also reads `CURSOR_API_KEY`) |
+| `CURSORPIPE_ENABLE_PROFILING` | `false` | Log timing diagnostics (TTFC, per-chunk gaps) |
 
 ---
 
@@ -161,8 +187,9 @@ except CursorPipeError as e:
 For quick scripts without explicit client management:
 
 ```python
-from cursorpipe import generate, chat, close
+from cursorpipe import generate, chat, warmup, close
 
+await warmup(pool_size=3)
 result = await generate(model="gpt-5.4-mini-medium", prompt="What is 2+2?")
 await close()
 ```

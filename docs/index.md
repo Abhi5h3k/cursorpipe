@@ -13,11 +13,15 @@ If you have a [Cursor](https://cursor.com) subscription, you already have access
 - **Async-first** — built on `asyncio` for non-blocking LLM calls
 - **Persistent ACP transport** — keeps a single agent process alive, ~50ms overhead per request
 - **Multi-turn sessions** — server-side conversation history, no need to resend messages
+- **Session isolation** — every request gets a fresh session; no history leaks between users or calls
+- **Warmup support** — pre-start the process and pre-create sessions to eliminate cold-start latency
+- **Framework-ready** — explicit session lifecycle (`create_session` / `discard`) for Chainlit, FastAPI, etc.
 - **Per-call model selection** — route different tasks to different models in a single client
 - **Streaming** — `async for` over response chunks as they arrive
 - **No prompt-length limit** — prompts sent over stdin, not CLI args
 - **Auto-fallback** — tries ACP first, falls back to subprocess if needed
 - **Typed everything** — Pydantic models, custom exceptions, `py.typed` for IDE support
+- **Fast JSON** — optional `orjson` support for ~4.6x faster JSON parsing (`pip install cursorpipe[fast]`)
 
 ## Quick example
 
@@ -27,6 +31,7 @@ from cursorpipe import CursorClient
 
 async def main():
     client = CursorClient()
+    await client.warmup(pool_size=3)  # optional: eliminate cold-start
 
     response = await client.generate(
         model="claude-4.5-sonnet-thinking",

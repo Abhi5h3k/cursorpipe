@@ -19,11 +19,15 @@ If you have a [Cursor](https://cursor.com) subscription, you already have access
 - **Async-first** — built on `asyncio` for non-blocking LLM calls
 - **Persistent ACP transport** — keeps a single agent process alive, ~50ms overhead per request instead of 1-3s for process-spawn approaches
 - **Multi-turn sessions** — server-side conversation history, no need to resend messages each turn
+- **Session isolation** — every request gets a fresh session; no history leaks between users or calls
+- **Warmup support** — pre-start the process and pre-create sessions to eliminate cold-start latency
+- **Framework-ready** — explicit session lifecycle (`create_session` / `discard`) for Chainlit, FastAPI, etc.
 - **Per-call model selection** — route different tasks to different models in a single client
 - **Streaming** — `async for` over response chunks as they arrive
 - **No prompt-length limit** — prompts sent over stdin, not CLI args (no Windows 8191-char ceiling)
 - **Auto-fallback** — tries ACP first, falls back to subprocess if needed
 - **Typed everything** — Pydantic models, custom exceptions, `py.typed` for IDE support
+- **Fast JSON** — optional `orjson` support for ~4.6x faster JSON parsing
 
 ---
 
@@ -63,6 +67,9 @@ export CURSORPIPE_API_KEY=crsr_your_key_here
 ```bash
 pip install git+https://github.com/Abhi5h3k/cursorpipe.git
 
+# With faster JSON parsing (recommended)
+pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+
 # Or with uv
 uv pip install git+https://github.com/Abhi5h3k/cursorpipe.git
 ```
@@ -75,6 +82,7 @@ from cursorpipe import CursorClient
 
 async def main():
     client = CursorClient()
+    await client.warmup(pool_size=3)  # optional: eliminate cold-start
 
     response = await client.generate(
         model="claude-4.5-sonnet-thinking",
@@ -96,21 +104,31 @@ The [`examples/`](examples/) folder has runnable scripts for every feature:
 | Example | What it shows |
 |---------|---------------|
 | [`basic.py`](examples/basic.py) | Simplest prompt-response flow |
+| [`warmup.py`](examples/warmup.py) | Pre-warming for zero cold-start latency |
 | [`streaming.py`](examples/streaming.py) | Stream chunks to terminal in real time |
 | [`multi_turn.py`](examples/multi_turn.py) | Session with memory across turns |
 | [`model_switching.py`](examples/model_switching.py) | Per-call model selection across tasks |
 | [`session_streaming.py`](examples/session_streaming.py) | Stream responses within a multi-turn session |
+| [`chainlit_pattern.py`](examples/chainlit_pattern.py) | Framework integration (Chainlit / FastAPI) |
 | [`api_key_auth.py`](examples/api_key_auth.py) | API key auth for scripts and CI |
 
 ```bash
 # Run any example
 python examples/basic.py
-python examples/streaming.py
+python examples/warmup.py
 ```
 
 ---
 
 ## Features
+
+### Warmup (recommended for production)
+
+```python
+client = CursorClient()
+await client.warmup(pool_size=5)
+# First request is now as fast as subsequent ones
+```
 
 ### Per-call model selection
 
@@ -163,18 +181,17 @@ async with client.session("claude-4.5-sonnet-thinking") as session:
     print(r2.text)  # Has full context of r1
 ```
 
-### Chat with message history
+### Framework integration (Chainlit / FastAPI)
 
 ```python
-response = await client.chat(
-    model="claude-4.5-sonnet-thinking",
-    messages=[
-        {"role": "system", "content": "You are a SQL expert."},
-        {"role": "user", "content": "Show top 10 users"},
-        {"role": "assistant", "content": "SELECT * FROM users ORDER BY revenue DESC LIMIT 10;"},
-        {"role": "user", "content": "Add a date filter for 2026"},
-    ],
-)
+# on_chat_start
+session = await client.create_session("claude-4.5-sonnet-thinking")
+
+# on_message (server has history — only send new message)
+response = await session.prompt(message.content)
+
+# on_chat_end
+session.discard()
 ```
 
 ### Module-level convenience
@@ -183,9 +200,10 @@ For quick scripts without explicit client setup:
 
 ```python
 import asyncio
-from cursorpipe import generate, close
+from cursorpipe import generate, warmup, close
 
 async def main():
+    await warmup(pool_size=3)
     result = await generate(
         model="gpt-5.4-mini-medium",
         prompt="What is 2+2?",
@@ -212,6 +230,7 @@ All settings load from environment variables (prefix `CURSORPIPE_`) or a `.env` 
 | `CURSORPIPE_ACP_MAX_RESTARTS` | `3` | Auto-restart attempts for crashed ACP process |
 | `CURSORPIPE_WORKSPACE` | `""` | Working directory for the agent (empty = cwd) |
 | `CURSORPIPE_API_KEY` | `""` | Cursor API key (also reads `CURSOR_API_KEY`). Passed as `--api-key` CLI flag. |
+| `CURSORPIPE_ENABLE_PROFILING` | `false` | Log timing diagnostics (TTFC, per-chunk gaps) |
 
 Or pass config programmatically:
 
@@ -232,10 +251,11 @@ client = CursorClient(config)
 
 ### ACP (default, recommended)
 
-Spawns a persistent `agent acp` process and communicates via stdin/stdout JSON-RPC. Sessions are pooled per model.
+Spawns a persistent `agent acp` process and communicates via stdin/stdout JSON-RPC. Sessions are dispensed (one per request) for isolation.
 
 - Fastest: ~50ms overhead per request (no process spawn)
 - Supports multi-turn sessions with server-side history
+- Session isolation: each request/user gets a fresh session
 - No prompt length limit (sent via stdin)
 - Auto-restarts if the process crashes
 
@@ -260,10 +280,12 @@ Tries ACP first; falls back to subprocess if ACP fails. Best of both worlds.
 
 | Method | Description |
 |--------|-------------|
+| `warmup(pool_size=5)` | Pre-start ACP process and pre-create sessions |
 | `generate(model, prompt, *, system, temperature, max_tokens, timeout_s)` | Single completion, returns `str` |
 | `chat(model, messages, *, temperature, max_tokens, timeout_s)` | Chat with message history, returns `str` |
 | `stream(model, prompt, *, system, timeout_s)` | Streaming completion, yields `str` chunks |
 | `session(model)` | Create a `CursorSession` context manager |
+| `create_session(model)` | Create a `CursorSession` with explicit lifecycle |
 | `list_models()` | Discover available models |
 | `close()` | Shut down transports |
 
@@ -273,6 +295,7 @@ Tries ACP first; falls back to subprocess if ACP fails. Best of both worlds.
 |--------|-------------|
 | `prompt(text, *, timeout_s)` | Send a prompt (history preserved), returns `CompletionResult` |
 | `stream_prompt(text, *, timeout_s)` | Streaming prompt, yields `str` chunks |
+| `discard()` | Release this session |
 | `model` | The model for this session |
 | `session_id` | The ACP session ID |
 | `turn_count` | Number of prompts sent |
@@ -344,6 +367,9 @@ Your Python code
 CursorClient (cursorpipe)
     |
     +--> AcpTransport ----stdin/stdout----> agent acp (persistent process)
+    |       |                                   |
+    |       +--> SessionDispenser               |
+    |            (pre-created sessions)         |
     |                                           |
     +--> SubprocessTransport ---spawn---->  agent --print (per request)
                                                 |

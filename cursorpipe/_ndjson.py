@@ -8,10 +8,11 @@ emits partial deltas followed by a full assistant message.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
+
+from cursorpipe._json import loads as _loads
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +27,8 @@ async def iter_ndjson_lines(stream: asyncio.StreamReader) -> AsyncIterator[dict[
         if not text:
             continue
         try:
-            yield json.loads(text)
-        except json.JSONDecodeError:
+            yield _loads(text)
+        except (ValueError, TypeError):
             logger.debug("Skipping non-JSON line: %s", text[:200])
 
 

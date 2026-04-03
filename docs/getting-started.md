@@ -102,4 +102,31 @@ Run it:
 python hello.py
 ```
 
-That's it! Check out the [Examples](examples.md) page for streaming, sessions, and more.
+## Speed up with warmup (recommended)
+
+The first request can take ~14s due to process startup and session creation. Add `warmup()` at startup to move that cost upfront:
+
+```python
+async def main():
+    client = CursorClient()
+    await client.warmup(pool_size=3)  # pre-start process + pre-create sessions
+
+    # First request is now as fast as subsequent ones (~5s)
+    response = await client.generate(
+        model="claude-4.5-sonnet-thinking",
+        prompt="Say hello in a creative way!",
+    )
+    print(response)
+
+    await client.close()
+```
+
+## Optional: faster JSON parsing
+
+Install the `fast` extra for ~4.6x faster JSON serialization (uses Rust-backed `orjson`):
+
+```bash
+pip install cursorpipe[fast]
+```
+
+That's it! Check out the [Examples](examples.md) page for streaming, sessions, framework integration, and more.

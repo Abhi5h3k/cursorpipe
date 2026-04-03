@@ -88,6 +88,15 @@ class CursorPipeConfig(BaseSettings):
         description="Working directory passed to the agent.  Empty = cwd at call time.",
     )
 
+    # -- Performance -----------------------------------------------------------
+    enable_profiling: bool = Field(
+        default=False,
+        description=(
+            "Log timing diagnostics: time-to-first-chunk (TTFC), per-chunk "
+            "inter-arrival, session acquire latency, and streaming duration."
+        ),
+    )
+
     def resolve_auth_env(self) -> dict[str, str]:
         """Return env-var overrides for the agent subprocess."""
         env: dict[str, str] = {}

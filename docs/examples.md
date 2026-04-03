@@ -33,6 +33,40 @@ asyncio.run(main())
 python examples/basic.py
 ```
 
+## Warmup (recommended for production)
+
+Pre-start the ACP process and pre-create sessions to eliminate the ~14s cold-start on the first request:
+
+```python
+import asyncio
+import time
+from cursorpipe import CursorClient
+
+async def main():
+    client = CursorClient()
+
+    # Pre-warm at startup
+    t0 = time.monotonic()
+    await client.warmup(pool_size=3)
+    print(f"Warmup: {time.monotonic() - t0:.1f}s")
+
+    # First request — same speed as subsequent ones
+    t1 = time.monotonic()
+    response = await client.generate(
+        model="claude-4.5-sonnet-thinking",
+        prompt="Reply with: WARMUP_OK",
+    )
+    print(f"Response in {time.monotonic() - t1:.1f}s: {response.strip()}")
+
+    await client.close()
+
+asyncio.run(main())
+```
+
+```bash
+python examples/warmup.py
+```
+
 ## Streaming
 
 See the response appear word-by-word instead of waiting for the full answer:
@@ -90,6 +124,50 @@ asyncio.run(main())
 
 ```bash
 python examples/multi_turn.py
+```
+
+## Framework integration (Chainlit / FastAPI)
+
+For frameworks where session create, use, and destroy happen in different callback functions, use `create_session()` with explicit lifecycle:
+
+```python
+import asyncio
+from cursorpipe import CursorClient
+
+client = CursorClient()
+
+async def app_startup():
+    await client.warmup(pool_size=5)
+
+async def on_chat_start(user_id):
+    session = await client.create_session("claude-4.5-sonnet-thinking")
+    return session  # store in user session
+
+async def on_message(session, message):
+    # Server has full history — only send the new message
+    async for chunk in session.stream_prompt(message):
+        print(chunk, end="", flush=True)
+    print()
+
+async def on_chat_end(session):
+    session.discard()
+
+async def main():
+    await app_startup()
+
+    # Simulate a user conversation
+    session = await on_chat_start("alice")
+    await on_message(session, "What is 42 * 3?")
+    await on_message(session, "Now double that.")  # server remembers the first turn
+    await on_chat_end(session)
+
+    await client.close()
+
+asyncio.run(main())
+```
+
+```bash
+python examples/chainlit_pattern.py
 ```
 
 ## API key authentication

@@ -1,7 +1,7 @@
 """ACP (Agent Client Protocol) transport — persistent agent process.
 
 Spawns ``agent acp`` once and communicates via stdin/stdout JSON-RPC.
-Sessions are pooled per model so switching models is cheap.  The process
+Sessions are dispensed (one per request) for isolation.  The process
 auto-restarts on crash up to ``acp_max_restarts`` times.
 
 Protocol reference: https://cursor.com/docs/cli/acp
@@ -10,14 +10,16 @@ Protocol reference: https://cursor.com/docs/cli/acp
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
+import time
 from collections.abc import AsyncIterator
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from cursorpipe._config import CursorPipeConfig
+from cursorpipe._json import dumps as _dumps
+from cursorpipe._json import loads as _loads
 from cursorpipe._errors import (
     AgentCrashError,
     AgentTimeoutError,
@@ -25,6 +27,7 @@ from cursorpipe._errors import (
     SessionError,
 )
 from cursorpipe._models import CompletionResult
+from cursorpipe._pool import SessionDispenser
 from cursorpipe._resolve import resolve_agent_command
 
 logger = logging.getLogger(__name__)
@@ -46,11 +49,13 @@ class AcpTransport:
         self._reader_task: asyncio.Task[None] | None = None
         self._next_id: int = 1
         self._pending: dict[int, asyncio.Future[dict]] = {}
-        self._notification_handlers: dict[str, list[asyncio.Queue[dict]]] = {}
+        self._notification_handlers: dict[
+            tuple[str, str], list[asyncio.Queue[dict]]
+        ] = {}
         self._initialized: bool = False
         self._restart_count: int = 0
         self._lock = asyncio.Lock()
-        self._sessions: dict[str, str] = {}  # model -> session_id
+        self.dispenser = SessionDispenser(self)
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -76,12 +81,14 @@ class AcpTransport:
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            limit=256 * 1024,
             env=env,
             cwd=self._config.workspace or None,
         )
         self._reader_task = asyncio.create_task(self._read_loop())
         self._initialized = False
-        self._sessions.clear()
+        self.dispenser.close()
+        self.dispenser = SessionDispenser(self)
 
         await self._initialize()
 
@@ -137,7 +144,7 @@ class AcpTransport:
 
     async def close(self) -> None:
         """Shut down the ACP process gracefully."""
-        self._sessions.clear()
+        self.dispenser.close()
         if self._process and self._process.stdin and not self._process.stdin.is_closing():
             self._process.stdin.close()
         if self._reader_task and not self._reader_task.done():
@@ -175,11 +182,11 @@ class AcpTransport:
         if params is not None:
             payload["params"] = params
 
-        line = json.dumps(payload) + "\n"
+        line = _dumps(payload) + "\n"
         self._process.stdin.write(line.encode("utf-8"))
         await self._process.stdin.drain()
 
-        future: asyncio.Future[dict] = asyncio.get_event_loop().create_future()
+        future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
         self._pending[msg_id] = future
         return await future
 
@@ -188,7 +195,7 @@ class AcpTransport:
         if self._process is None or self._process.stdin is None:
             return
         payload = {"jsonrpc": "2.0", "id": msg_id, "result": result}
-        line = json.dumps(payload) + "\n"
+        line = _dumps(payload) + "\n"
         self._process.stdin.write(line.encode("utf-8"))
         # drain is fire-and-forget here since we're in a sync callback context
 
@@ -204,8 +211,8 @@ class AcpTransport:
                 if not line:
                     continue
                 try:
-                    msg = json.loads(line)
-                except json.JSONDecodeError:
+                    msg = _loads(line)
+                except (ValueError, TypeError):
                     logger.debug("Non-JSON from ACP: %s", line[:200])
                     continue
                 self._dispatch(msg)
@@ -245,9 +252,11 @@ class AcpTransport:
             })
             return
 
-        # Notifications (no id, or server-initiated notifications)
-        if method in self._notification_handlers:
-            for queue in self._notification_handlers[method]:
+        # Notifications — route by (method, sessionId) for isolation
+        session_id = msg.get("params", {}).get("sessionId", "")
+        key = (method, session_id)
+        if key in self._notification_handlers:
+            for queue in self._notification_handlers[key]:
                 try:
                     queue.put_nowait(msg)
                 except asyncio.QueueFull:
@@ -261,39 +270,39 @@ class AcpTransport:
 
         logger.debug("Unhandled ACP message: %s", method or msg)
 
-    def _subscribe(self, method: str) -> asyncio.Queue[dict]:
-        """Subscribe to notifications of a given method.  Returns a queue."""
+    def _subscribe(self, method: str, session_id: str) -> asyncio.Queue[dict]:
+        """Subscribe to notifications for a specific (method, sessionId) pair."""
+        key = (method, session_id)
         queue: asyncio.Queue[dict] = asyncio.Queue(maxsize=1000)
-        self._notification_handlers.setdefault(method, []).append(queue)
+        self._notification_handlers.setdefault(key, []).append(queue)
         return queue
 
-    def _unsubscribe(self, method: str, queue: asyncio.Queue[dict]) -> None:
-        handlers = self._notification_handlers.get(method, [])
+    def _unsubscribe(self, method: str, session_id: str, queue: asyncio.Queue[dict]) -> None:
+        key = (method, session_id)
+        handlers = self._notification_handlers.get(key, [])
         if queue in handlers:
             handlers.remove(queue)
+            if not handlers:
+                self._notification_handlers.pop(key, None)
 
     # ------------------------------------------------------------------
     # Session management
     # ------------------------------------------------------------------
 
-    async def get_or_create_session(self, model: str) -> str:
-        """Return an existing session for this model, or create one."""
-        if model in self._sessions:
-            return self._sessions[model]
+    async def create_session_raw(self) -> str:
+        """Create a new ACP session and return its ID.
 
+        This is the low-level primitive used by :class:`SessionDispenser`.
+        Each call sends a ``session/new`` RPC to the agent.
+        """
         cwd = self._config.workspace or os.getcwd()
         params: dict[str, Any] = {"cwd": cwd, "mcpServers": []}
         result = await self._send("session/new", params)
         session_id = result.get("sessionId", "")
         if not session_id:
             raise SessionError("session/new returned no sessionId", None)
-        self._sessions[model] = session_id
-        logger.info("Created ACP session %s for model %s", session_id[:12], model)
+        logger.info("Created ACP session %s", session_id[:12])
         return session_id
-
-    def drop_session(self, model: str) -> None:
-        """Forget a cached session (e.g. after an error)."""
-        self._sessions.pop(model, None)
 
     # ------------------------------------------------------------------
     # Prompt execution
@@ -310,10 +319,10 @@ class AcpTransport:
         """Send a prompt and collect the full response."""
         await self.ensure_started()
 
-        sid = session_id or await self.get_or_create_session(model)
+        sid = session_id or await self.dispenser.acquire()
         timeout = timeout_s or self._config.request_timeout_s
 
-        update_queue = self._subscribe("session/update")
+        update_queue = self._subscribe("session/update", sid)
         try:
             prompt_future = asyncio.ensure_future(
                 self._send("session/prompt", {
@@ -343,7 +352,7 @@ class AcpTransport:
                 stop_reason=stop_reason,
             )
         finally:
-            self._unsubscribe("session/update", update_queue)
+            self._unsubscribe("session/update", sid, update_queue)
 
     async def prompt_stream(
         self,
@@ -356,45 +365,96 @@ class AcpTransport:
         """Send a prompt and yield text chunks as they arrive."""
         await self.ensure_started()
 
-        sid = session_id or await self.get_or_create_session(model)
+        profiling = self._config.enable_profiling
+        t_start = time.monotonic() if profiling else 0.0
+
+        sid = session_id or await self.dispenser.acquire()
+
+        if profiling:
+            logger.info(
+                "[profile] session acquire: %.1fms",
+                (time.monotonic() - t_start) * 1000,
+            )
+
         timeout = timeout_s or self._config.request_timeout_s
 
-        update_queue = self._subscribe("session/update")
+        update_queue = self._subscribe("session/update", sid)
         try:
+            done_event = asyncio.Event()
+
             prompt_task = asyncio.ensure_future(
                 self._send("session/prompt", {
                     "sessionId": sid,
                     "prompt": [{"type": "text", "text": text}],
                 })
             )
+            prompt_task.add_done_callback(lambda _: done_event.set())
 
-            deadline = asyncio.get_event_loop().time() + timeout
-            while not prompt_task.done():
-                remaining = deadline - asyncio.get_event_loop().time()
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + timeout
+
+            chunk_count = 0
+            t_first_chunk = 0.0
+            t_last_chunk = t_start
+            chunk_gaps: list[float] = [] if profiling else []
+
+            while not done_event.is_set():
+                remaining = deadline - loop.time()
                 if remaining <= 0:
                     prompt_task.cancel()
                     raise AgentTimeoutError(timeout, f"model={model}")
-                try:
-                    msg = await asyncio.wait_for(update_queue.get(), timeout=min(remaining, 1.0))
-                    chunk = self._extract_chunk_text(msg)
+
+                get_task = asyncio.ensure_future(update_queue.get())
+                done_waiter = asyncio.ensure_future(done_event.wait())
+
+                finished, pending = await asyncio.wait(
+                    {get_task, done_waiter},
+                    timeout=remaining,
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+
+                for p in pending:
+                    p.cancel()
+
+                if get_task in finished:
+                    chunk = self._extract_chunk_text(get_task.result())
                     if chunk:
+                        if profiling:
+                            now = time.monotonic()
+                            if chunk_count == 0:
+                                t_first_chunk = now
+                            else:
+                                chunk_gaps.append(now - t_last_chunk)
+                            t_last_chunk = now
+                        chunk_count += 1
                         yield chunk
-                except TimeoutError:
-                    continue
 
             # Drain remaining after prompt completes
             while not update_queue.empty():
                 msg = update_queue.get_nowait()
                 chunk = self._extract_chunk_text(msg)
                 if chunk:
+                    chunk_count += 1
                     yield chunk
 
             # Check for errors
             result = prompt_task.result()
             if isinstance(result, dict) and result.get("error"):
                 raise SessionError(str(result["error"]), sid)
+
+            if profiling and chunk_count > 0:
+                total_ms = (time.monotonic() - t_start) * 1000
+                ttfc_ms = (t_first_chunk - t_start) * 1000 if t_first_chunk else 0
+                avg_gap = (sum(chunk_gaps) / len(chunk_gaps) * 1000) if chunk_gaps else 0
+                min_gap = min(chunk_gaps) * 1000 if chunk_gaps else 0
+                max_gap = max(chunk_gaps) * 1000 if chunk_gaps else 0
+                logger.info(
+                    "[profile] stream done: %d chunks, %.0fms total, "
+                    "TTFC=%.0fms, gap min/avg/max=%.1f/%.1f/%.1fms",
+                    chunk_count, total_ms, ttfc_ms, min_gap, avg_gap, max_gap,
+                )
         finally:
-            self._unsubscribe("session/update", update_queue)
+            self._unsubscribe("session/update", sid, update_queue)
 
     @staticmethod
     def _extract_chunk_text(msg: dict[str, Any]) -> str:
