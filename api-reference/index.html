@@ -1,0 +1,1507 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Async Python client and OpenAI-compatible HTTP server for the Cursor Agent CLI">
+      
+      
+      
+        <link rel="canonical" href="https://abhi5h3k.github.io/cursorpipe/api-reference/">
+      
+      
+        <link rel="prev" href="../examples/">
+      
+      
+        <link rel="next" href="../architecture/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API Reference - cursorpipe</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="cursorpipe" class="md-header__button md-logo" aria-label="cursorpipe" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            cursorpipe
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Abhi5h3k/cursorpipe" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Abhi5h3k/cursorpipe
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="cursorpipe" class="md-nav__button md-logo" aria-label="cursorpipe" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    cursorpipe
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Abhi5h3k/cursorpipe" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Abhi5h3k/cursorpipe
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#http-api-cursorpipe-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP API (cursorpipe-server)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HTTP API (cursorpipe-server)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#request-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#server-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cursorclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CursorClient
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CursorClient">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warmup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        warmup()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#active_requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        active_requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chat()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stream()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        session()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_session()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cursorsession" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CursorSession
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cursorpipeconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CursorPipeConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#completionresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CompletionResult
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exceptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-level-convenience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module-level convenience
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#http-api-cursorpipe-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP API (cursorpipe-server)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HTTP API (cursorpipe-server)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#request-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#server-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cursorclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CursorClient
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CursorClient">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warmup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        warmup()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#active_requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        active_requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        chat()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stream()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        session()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_session()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cursorsession" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CursorSession
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cursorpipeconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CursorPipeConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#completionresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CompletionResult
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exceptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-level-convenience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module-level convenience
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="api-reference">API Reference</h1>
+<hr />
+<h2 id="http-api-cursorpipe-server">HTTP API (cursorpipe-server)</h2>
+<p>cursorpipe-server exposes an OpenAI-compatible HTTP API. See <a href="../server/">HTTP Server</a> for full endpoint documentation.</p>
+<h3 id="endpoints">Endpoints</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/v1/chat/completions</code></td>
+<td>Chat completions (streaming + non-streaming)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/v1/models</code></td>
+<td>List available models</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/health</code></td>
+<td>Health check</td>
+</tr>
+</tbody>
+</table>
+<h3 id="request-schema">Request schema</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;claude-4.5-sonnet-thinking&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">],</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>      <span class="c1"># true for SSE streaming</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="mi">2048</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="server-config">Server config</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CURSORPIPE_HOST</code></td>
+<td><code>0.0.0.0</code></td>
+<td>Bind address</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_PORT</code></td>
+<td><code>8080</code></td>
+<td>Bind port</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_POOL_SIZE</code></td>
+<td><code>5</code></td>
+<td>Sessions to pre-create at startup</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_BEARER_TOKEN</code></td>
+<td><code>""</code></td>
+<td>Optional auth for incoming requests</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="python-api">Python API</h2>
+<h3 id="cursorclient">CursorClient</h3>
+<p>The main entry point. Handles transport selection, fallback, and resource cleanup.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cursorpipe</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorClient</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">CursorClient</span><span class="p">()</span>          <span class="c1"># auto-load config from env / .env</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">client</span> <span class="o">=</span> <span class="n">CursorClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>    <span class="c1"># explicit CursorPipeConfig</span>
+</code></pre></div>
+<h4 id="properties">Properties</h4>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config</code></td>
+<td><code>CursorPipeConfig</code></td>
+<td>The client's configuration</td>
+</tr>
+<tr>
+<td><code>active_requests</code></td>
+<td><code>int</code></td>
+<td>Number of LLM requests currently in-flight (read-only)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="methods">Methods</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>warmup(pool_size=5)</code></td>
+<td>Pre-start ACP process and pre-create sessions</td>
+</tr>
+<tr>
+<td><code>generate(model, prompt, *, system, temperature, max_tokens, timeout_s)</code></td>
+<td>Single completion, returns <code>str</code></td>
+</tr>
+<tr>
+<td><code>chat(model, messages, *, temperature, max_tokens, timeout_s)</code></td>
+<td>Chat with message history, returns <code>str</code></td>
+</tr>
+<tr>
+<td><code>stream(model, prompt, *, system, timeout_s)</code></td>
+<td>Streaming completion, yields <code>str</code> chunks</td>
+</tr>
+<tr>
+<td><code>session(model)</code></td>
+<td>Create a <code>CursorSession</code> context manager</td>
+</tr>
+<tr>
+<td><code>create_session(model)</code></td>
+<td>Create a <code>CursorSession</code> with explicit lifecycle</td>
+</tr>
+<tr>
+<td><code>list_models()</code></td>
+<td>Discover available models</td>
+</tr>
+<tr>
+<td><code>close()</code></td>
+<td>Shut down transports and release resources</td>
+</tr>
+</tbody>
+</table>
+<h4 id="warmup">warmup()</h4>
+<p>Pre-start the ACP process and fill the session dispenser. Call once at app startup to eliminate cold-start latency on the first real request.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">warmup</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+<p>Without warmup, the first request takes ~14s (process spawn + session creation + LLM).
+With warmup, the first request takes ~5s (LLM only).</p>
+<h4 id="active_requests">active_requests</h4>
+<p>A read-only integer property that reports how many LLM requests are currently in-flight through this client. Useful for load-aware concurrency scaling — for example, a background enrichment worker can throttle itself when user-facing requests are active.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">if</span> <span class="n">client</span><span class="o">.</span><span class="n">active_requests</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="c1"># No user-facing calls — safe to run background work at full concurrency</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="o">...</span>
+</code></pre></div>
+<p>All code paths are tracked: <code>generate()</code>, <code>chat()</code>, <code>stream()</code>, <code>session.prompt()</code>, and <code>session.stream_prompt()</code>. The counter is decremented in a <code>finally</code> block, so it stays accurate even when requests raise exceptions.</p>
+<h4 id="generate">generate()</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-4.5-sonnet-thinking&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Explain Python&#39;s GIL.&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">system</span><span class="o">=</span><span class="s2">&quot;You are a helpful teacher.&quot;</span><span class="p">,</span>    <span class="c1"># optional</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">temperature</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>                          <span class="c1"># optional, default 0</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>                        <span class="c1"># optional, default 2048</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">timeout_s</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>                           <span class="c1"># optional, default from config</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">)</span>
+</code></pre></div>
+<h4 id="chat">chat()</h4>
+<p>Accepts a list of message dicts. Messages are merged into a single prompt internally.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-4.5-sonnet-thinking&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;You are a SQL expert.&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Show top 10 users&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;SELECT * FROM users LIMIT 10;&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Add a date filter for 2026&quot;</span><span class="p">},</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="p">],</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">)</span>
+</code></pre></div>
+<h4 id="stream">stream()</h4>
+<p>Returns an async iterator. Use <code>async for</code> to get chunks:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-4.5-sonnet-thinking&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Write a detailed analysis...&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">):</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="session">session()</h4>
+<p>Creates a multi-turn session with server-side history (ACP only). Use as an async context manager:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">client</span><span class="o">.</span><span class="n">session</span><span class="p">(</span><span class="s2">&quot;claude-4.5-sonnet-thinking&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">r1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s2">&quot;Generate SQL for top 10 users&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">r2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s2">&quot;Add a WHERE clause&quot;</span><span class="p">)</span>  <span class="c1"># remembers r1</span>
+</code></pre></div>
+<h4 id="create_session">create_session()</h4>
+<p>Creates a multi-turn session with explicit lifecycle control — ideal for frameworks like Chainlit or FastAPI where create, use, and destroy happen in different callback functions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">session</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">create_session</span><span class="p">(</span><span class="s2">&quot;claude-4.5-sonnet-thinking&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">r1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s2">&quot;Generate SQL for top 10 users&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">r2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s2">&quot;Add a WHERE clause&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">session</span><span class="o">.</span><span class="n">discard</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h3 id="cursorsession">CursorSession</h3>
+<p>Returned by <code>client.session()</code> or <code>client.create_session()</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Property / Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prompt(text, *, timeout_s)</code></td>
+<td>Send a prompt (history preserved), returns <code>CompletionResult</code></td>
+</tr>
+<tr>
+<td><code>stream_prompt(text, *, timeout_s)</code></td>
+<td>Streaming prompt, yields <code>str</code> chunks</td>
+</tr>
+<tr>
+<td><code>discard()</code></td>
+<td>Release this session (no-op if already discarded)</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>The model for this session</td>
+</tr>
+<tr>
+<td><code>session_id</code></td>
+<td>The ACP session ID</td>
+</tr>
+<tr>
+<td><code>turn_count</code></td>
+<td>Number of prompts sent</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="cursorpipeconfig">CursorPipeConfig</h3>
+<p>All settings are loaded from environment variables (prefix <code>CURSORPIPE_</code>) or a <code>.env</code> file.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cursorpipe</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPipeConfig</span><span class="p">,</span> <span class="n">Strategy</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">CursorPipeConfig</span><span class="p">(</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;crsr_...&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">strategy</span><span class="o">=</span><span class="n">Strategy</span><span class="o">.</span><span class="n">ACP</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">request_timeout_s</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CURSORPIPE_AGENT_BIN</code></td>
+<td><code>agent</code></td>
+<td>Path to the agent binary</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_STRATEGY</code></td>
+<td><code>auto</code></td>
+<td>Transport: <code>acp</code>, <code>subprocess</code>, <code>auto</code></td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_DEFAULT_MODE</code></td>
+<td><code>ask</code></td>
+<td>ACP mode: <code>ask</code>, <code>agent</code>, <code>plan</code></td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_REQUEST_TIMEOUT_S</code></td>
+<td><code>300</code></td>
+<td>Per-request timeout in seconds</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_ACP_STARTUP_TIMEOUT_S</code></td>
+<td><code>30</code></td>
+<td>Max seconds for ACP startup</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_ACP_MAX_RESTARTS</code></td>
+<td><code>3</code></td>
+<td>Auto-restart attempts for crashed ACP</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_WORKSPACE</code></td>
+<td><code>""</code></td>
+<td>Working directory for the agent</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_API_KEY</code></td>
+<td><code>""</code></td>
+<td>Cursor API key (also reads <code>CURSOR_API_KEY</code>)</td>
+</tr>
+<tr>
+<td><code>CURSORPIPE_ENABLE_PROFILING</code></td>
+<td><code>false</code></td>
+<td>Log timing diagnostics (TTFC, per-chunk gaps)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="completionresult">CompletionResult</h3>
+<p>Returned by <code>session.prompt()</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>str</code></td>
+<td>The response text</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>str</code></td>
+<td>Model that generated the response</td>
+</tr>
+<tr>
+<td><code>session_id</code></td>
+<td><code>str</code></td>
+<td>ACP session ID</td>
+</tr>
+<tr>
+<td><code>stop_reason</code></td>
+<td><code>str</code></td>
+<td>Why generation stopped</td>
+</tr>
+<tr>
+<td><code>duration_ms</code></td>
+<td><code>int</code></td>
+<td>Response time (subprocess only)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="exceptions">Exceptions</h3>
+<p>All exceptions inherit from <code>CursorPipeError</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AgentNotFoundError</code></td>
+<td>Agent binary not found</td>
+</tr>
+<tr>
+<td><code>AuthenticationError</code></td>
+<td>Auth failed or missing</td>
+</tr>
+<tr>
+<td><code>AgentTimeoutError</code></td>
+<td>Request exceeded timeout</td>
+</tr>
+<tr>
+<td><code>RateLimitError</code></td>
+<td>Cursor returned 429</td>
+</tr>
+<tr>
+<td><code>AgentCrashError</code></td>
+<td>Agent process exited unexpectedly</td>
+</tr>
+<tr>
+<td><code>SessionError</code></td>
+<td>ACP session error</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cursorpipe</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPipeError</span><span class="p">,</span> <span class="n">AuthenticationError</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">except</span> <span class="n">AuthenticationError</span><span class="p">:</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Run `agent login` or set CURSORPIPE_API_KEY&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="k">except</span> <span class="n">CursorPipeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Something went wrong: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h3 id="module-level-convenience">Module-level convenience</h3>
+<p>For quick scripts without explicit client management:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cursorpipe</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate</span><span class="p">,</span> <span class="n">chat</span><span class="p">,</span> <span class="n">warmup</span><span class="p">,</span> <span class="n">close</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="k">await</span> <span class="n">warmup</span><span class="p">(</span><span class="n">pool_size</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-5.4-mini-medium&quot;</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;What is 2+2?&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="k">await</span> <span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+<p>These use a global singleton <code>CursorClient</code> under the hood.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
