@@ -253,6 +253,17 @@ async with client.session("claude-4.5-sonnet-thinking") as session:
     r2 = await session.prompt("Add a WHERE clause for date > 2026-01-01")
 ```
 
+### Active request tracking
+
+`CursorClient` exposes an `active_requests` property that reports how many LLM requests are currently in-flight. Useful for load-aware concurrency scaling in background workers.
+
+```python
+client = CursorClient()
+print(client.active_requests)  # 0 when idle
+```
+
+All code paths are tracked: `generate()`, `chat()`, `stream()`, `session.prompt()`, and `session.stream_prompt()`. The counter is decremented even if the request raises an exception.
+
 ### Framework integration (Chainlit / FastAPI)
 
 ```python

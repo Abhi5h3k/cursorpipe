@@ -443,3 +443,133 @@ class TestNotificationRouting:
         }
         transport._dispatch(msg)
         assert q.empty()
+
+
+# =========================================================================
+# Active-requests counter (CursorClient + CursorSession)
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestActiveRequests:
+    """Verify that CursorClient.active_requests tracks in-flight LLM calls."""
+
+    def _make_client(self):
+        """Return a CursorClient wired to mock transports."""
+        from cursorpipe._client import CursorClient
+        from cursorpipe._models import CompletionResult
+
+        client = CursorClient()
+
+        mock_acp = MagicMock()
+        mock_acp.prompt = AsyncMock(
+            return_value=CompletionResult(text="ok", model="m", session_id="s"),
+        )
+
+        async def _fake_stream(*a, **kw):
+            yield "chunk1"
+            yield "chunk2"
+
+        mock_acp.prompt_stream = MagicMock(side_effect=_fake_stream)
+        mock_acp.ensure_started = AsyncMock()
+        mock_acp.dispenser = MagicMock()
+        mock_acp.dispenser.acquire = AsyncMock(return_value="sess-test")
+
+        client._acp = mock_acp
+        client._config.strategy = Strategy.ACP
+        return client
+
+    def test_starts_at_zero(self) -> None:
+        from cursorpipe._client import CursorClient
+
+        client = CursorClient()
+        assert client.active_requests == 0
+
+    async def test_generate_increments_and_decrements(self) -> None:
+        client = self._make_client()
+        assert client.active_requests == 0
+        await client.generate(model="m", prompt="hi")
+        assert client.active_requests == 0
+
+    async def test_generate_decrements_on_exception(self) -> None:
+        client = self._make_client()
+        client._acp.prompt = AsyncMock(side_effect=CursorPipeError("boom"))
+
+        with pytest.raises(CursorPipeError):
+            await client.generate(model="m", prompt="hi")
+        assert client.active_requests == 0
+
+    async def test_stream_increments_during_iteration(self) -> None:
+        client = self._make_client()
+        assert client.active_requests == 0
+
+        chunks = []
+        async for chunk in client.stream(model="m", prompt="hi"):
+            assert client.active_requests == 1
+            chunks.append(chunk)
+
+        assert chunks == ["chunk1", "chunk2"]
+        assert client.active_requests == 0
+
+    async def test_stream_decrements_on_exception(self) -> None:
+        client = self._make_client()
+
+        async def _exploding_stream(*a, **kw):
+            yield "ok"
+            raise CursorPipeError("stream boom")
+
+        client._acp.prompt_stream = MagicMock(side_effect=_exploding_stream)
+
+        with pytest.raises(CursorPipeError):
+            async for _ in client.stream(model="m", prompt="hi"):
+                pass
+        assert client.active_requests == 0
+
+    async def test_session_prompt_increments_and_decrements(self) -> None:
+        client = self._make_client()
+
+        async with client.session("m") as session:
+            assert client.active_requests == 0
+            await session.prompt("hi")
+            assert client.active_requests == 0
+
+    async def test_session_prompt_decrements_on_exception(self) -> None:
+        client = self._make_client()
+        client._acp.prompt = AsyncMock(side_effect=CursorPipeError("fail"))
+
+        async with client.session("m") as session:
+            with pytest.raises(CursorPipeError):
+                await session.prompt("hi")
+            assert client.active_requests == 0
+
+    async def test_session_stream_prompt_increments_and_decrements(self) -> None:
+        client = self._make_client()
+
+        async with client.session("m") as session:
+            chunks = []
+            async for chunk in session.stream_prompt("hi"):
+                assert client.active_requests == 1
+                chunks.append(chunk)
+            assert chunks == ["chunk1", "chunk2"]
+            assert client.active_requests == 0
+
+    async def test_concurrent_requests_stack(self) -> None:
+        """Multiple overlapping generate() calls stack the counter."""
+        client = self._make_client()
+        observed: list[int] = []
+
+        async def _slow_prompt(*a, **kw):
+            from cursorpipe._models import CompletionResult
+
+            observed.append(client.active_requests)
+            await asyncio.sleep(0.01)
+            return CompletionResult(text="ok", model="m", session_id="s")
+
+        client._acp.prompt = AsyncMock(side_effect=_slow_prompt)
+
+        await asyncio.gather(
+            client.generate(model="m", prompt="a"),
+            client.generate(model="m", prompt="b"),
+        )
+        assert client.active_requests == 0
+        assert max(observed) == 2

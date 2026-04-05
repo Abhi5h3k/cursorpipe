@@ -53,10 +53,16 @@ class CursorClient:
         self._config = config or CursorPipeConfig()
         self._acp: AcpTransport | None = None
         self._subprocess: SubprocessTransport | None = None
+        self._active_requests: int = 0
 
     @property
     def config(self) -> CursorPipeConfig:
         return self._config
+
+    @property
+    def active_requests(self) -> int:
+        """Number of LLM requests currently in-flight through this client."""
+        return self._active_requests
 
     # ------------------------------------------------------------------
     # Transport selection
@@ -129,21 +135,25 @@ class CursorClient:
         """
         full_prompt = f"{system}\n\n{prompt}".strip() if system else prompt
 
-        if self._should_use_acp():
-            try:
-                result = await self._get_acp().prompt(
-                    model, full_prompt, timeout_s=timeout_s,
-                )
-                return result.text
-            except CursorPipeError:
-                if self._config.strategy == Strategy.ACP:
-                    raise
-                logger.warning("ACP failed, falling back to subprocess")
+        self._active_requests += 1
+        try:
+            if self._should_use_acp():
+                try:
+                    result = await self._get_acp().prompt(
+                        model, full_prompt, timeout_s=timeout_s,
+                    )
+                    return result.text
+                except CursorPipeError:
+                    if self._config.strategy == Strategy.ACP:
+                        raise
+                    logger.warning("ACP failed, falling back to subprocess")
 
-        result = await self._get_subprocess().generate(
-            model, full_prompt, timeout_s=timeout_s,
-        )
-        return result.text
+            result = await self._get_subprocess().generate(
+                model, full_prompt, timeout_s=timeout_s,
+            )
+            return result.text
+        finally:
+            self._active_requests -= 1
 
     async def chat(
         self,
@@ -178,22 +188,26 @@ class CursorClient:
         """Stream a completion, yielding text chunks as they arrive."""
         full_prompt = f"{system}\n\n{prompt}".strip() if system else prompt
 
-        if self._should_use_acp():
-            try:
-                async for chunk in self._get_acp().prompt_stream(
-                    model, full_prompt, timeout_s=timeout_s,
-                ):
-                    yield chunk
-                return
-            except CursorPipeError:
-                if self._config.strategy == Strategy.ACP:
-                    raise
-                logger.warning("ACP streaming failed, falling back to subprocess")
+        self._active_requests += 1
+        try:
+            if self._should_use_acp():
+                try:
+                    async for chunk in self._get_acp().prompt_stream(
+                        model, full_prompt, timeout_s=timeout_s,
+                    ):
+                        yield chunk
+                    return
+                except CursorPipeError:
+                    if self._config.strategy == Strategy.ACP:
+                        raise
+                    logger.warning("ACP streaming failed, falling back to subprocess")
 
-        async for chunk in self._get_subprocess().generate_stream(
-            model, full_prompt, timeout_s=timeout_s,
-        ):
-            yield chunk
+            async for chunk in self._get_subprocess().generate_stream(
+                model, full_prompt, timeout_s=timeout_s,
+            ):
+                yield chunk
+        finally:
+            self._active_requests -= 1
 
     def session(self, model: str) -> CursorSession:
         """Create a multi-turn session with server-side history (ACP only).
@@ -204,7 +218,7 @@ class CursorClient:
                 r1 = await s.prompt("Generate SQL for ...")
                 r2 = await s.prompt("Now add a WHERE clause")
         """
-        return CursorSession(self._get_acp(), model)
+        return CursorSession(self._get_acp(), model, client=self)
 
     async def create_session(self, model: str) -> CursorSession:
         """Create a multi-turn session with explicit lifecycle control.
@@ -226,7 +240,7 @@ class CursorClient:
         acp = self._get_acp()
         await acp.ensure_started()
         sid = await acp.dispenser.acquire()
-        return CursorSession(acp, model, session_id=sid)
+        return CursorSession(acp, model, session_id=sid, client=self)
 
     async def list_models(self) -> list[str]:
         """Discover available models via ``agent --list-models``."""

@@ -23,6 +23,7 @@ from cursorpipe._models import CompletionResult
 
 if TYPE_CHECKING:
     from cursorpipe._acp import AcpTransport
+    from cursorpipe._client import CursorClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,8 @@ class CursorSession:
     session_id : str | None
         Pre-acquired session ID.  When *None*, a session is acquired from
         the dispenser on first use (or on ``__aenter__``).
+    client : CursorClient | None
+        Back-reference to the owning client for ``active_requests`` tracking.
     """
 
     def __init__(
@@ -51,10 +54,12 @@ class CursorSession:
         model: str,
         *,
         session_id: str | None = None,
+        client: CursorClient | None = None,
     ) -> None:
         self._transport = transport
         self._model = model
         self._session_id: str | None = session_id
+        self._client: CursorClient | None = client
         self._turn_count: int = 0
 
     @property
@@ -105,14 +110,20 @@ class CursorSession:
             await self.__aenter__()
         assert self._session_id is not None
 
-        result = await self._transport.prompt(
-            self._model,
-            text,
-            session_id=self._session_id,
-            timeout_s=timeout_s,
-        )
-        self._turn_count += 1
-        return result
+        if self._client is not None:
+            self._client._active_requests += 1
+        try:
+            result = await self._transport.prompt(
+                self._model,
+                text,
+                session_id=self._session_id,
+                timeout_s=timeout_s,
+            )
+            self._turn_count += 1
+            return result
+        finally:
+            if self._client is not None:
+                self._client._active_requests -= 1
 
     async def stream_prompt(
         self, text: str, *, timeout_s: float | None = None
@@ -122,11 +133,17 @@ class CursorSession:
             await self.__aenter__()
         assert self._session_id is not None
 
-        self._turn_count += 1
-        async for chunk in self._transport.prompt_stream(
-            self._model,
-            text,
-            session_id=self._session_id,
-            timeout_s=timeout_s,
-        ):
-            yield chunk
+        if self._client is not None:
+            self._client._active_requests += 1
+        try:
+            self._turn_count += 1
+            async for chunk in self._transport.prompt_stream(
+                self._model,
+                text,
+                session_id=self._session_id,
+                timeout_s=timeout_s,
+            ):
+                yield chunk
+        finally:
+            if self._client is not None:
+                self._client._active_requests -= 1

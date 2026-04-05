@@ -53,6 +53,13 @@ client = CursorClient()          # auto-load config from env / .env
 client = CursorClient(config)    # explicit CursorPipeConfig
 ```
 
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `config` | `CursorPipeConfig` | The client's configuration |
+| `active_requests` | `int` | Number of LLM requests currently in-flight (read-only) |
+
 #### Methods
 
 | Method | Description |
@@ -76,6 +83,18 @@ await client.warmup(pool_size=5)
 
 Without warmup, the first request takes ~14s (process spawn + session creation + LLM).
 With warmup, the first request takes ~5s (LLM only).
+
+#### active_requests
+
+A read-only integer property that reports how many LLM requests are currently in-flight through this client. Useful for load-aware concurrency scaling — for example, a background enrichment worker can throttle itself when user-facing requests are active.
+
+```python
+if client.active_requests == 0:
+    # No user-facing calls — safe to run background work at full concurrency
+    ...
+```
+
+All code paths are tracked: `generate()`, `chat()`, `stream()`, `session.prompt()`, and `session.stream_prompt()`. The counter is decremented in a `finally` block, so it stays accurate even when requests raise exceptions.
 
 #### generate()
 
