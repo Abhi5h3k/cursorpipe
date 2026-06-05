@@ -4,9 +4,13 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Cursor CLI](https://img.shields.io/badge/cursor%20cli-v2026.03.25-purple.svg)](https://cursor.com/docs/cli/installation)
 
+
 **Async Python client and OpenAI-compatible HTTP server for the Cursor Agent CLI** — pipe prompts to frontier LLMs via [ACP (Agent Client Protocol)](https://cursor.com/docs/cli/acp) with persistent sessions, streaming, and per-call model selection.
 
 > **[Read the full documentation](https://abhi5h3k.github.io/cursorpipe/)**
+
+<img width="2752" height="1536" alt="cursorpipe" src="https://github.com/user-attachments/assets/f2b3c1c7-e5f5-4cce-b9f4-18822f6fbcd0" />
+
 
 ---
 
@@ -15,6 +19,8 @@
 If you have a [Cursor](https://cursor.com) subscription, you already have access to frontier models (Claude, GPT, etc.) through the Cursor Agent CLI. **cursorpipe** lets you use those models programmatically — from Python, from any language via HTTP, or from any LLM tool via Docker.
 
 No OpenAI or Anthropic API keys needed. One Cursor subscription, three ways to use it.
+
+<img width="2816" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/c415aadf-1b76-4ce0-ae72-bc4250258e40" />
 
 ---
 
@@ -94,6 +100,9 @@ async def main():
 
 asyncio.run(main())
 ```
+
+<img width="2752" height="1536" alt="ways to use cursorpipe" src="https://github.com/user-attachments/assets/1f071585-9867-45db-888e-eb71e4df5add" />
+
 
 ---
 
@@ -284,6 +293,9 @@ async with client.session("claude-4.5-sonnet-thinking") as session:
     r2 = await session.prompt("Add a WHERE clause for date > 2026-01-01")
 ```
 
+<img width="2752" height="1536" alt="session" src="https://github.com/user-attachments/assets/d3ecad3b-9b43-4966-9ff8-7a5bf3ef4bc6" />
+
+
 ### Active request tracking
 
 `CursorClient` exposes an `active_requests` property that reports how many LLM requests are currently in-flight. Useful for load-aware concurrency scaling in background workers.
@@ -354,28 +366,8 @@ The [`examples/`](examples/) folder has runnable scripts for every feature:
 
 ## Architecture
 
-```
-Any client (Python, JS, curl, LangChain, Open WebUI ...)
-    |
-    v  HTTP (OpenAI-compatible)
-cursorpipe-server (FastAPI)           <-- optional HTTP layer
-    |
-    v
-CursorClient (cursorpipe library)
-    |
-    +--> AcpTransport ----stdin/stdout----> agent acp (persistent process)
-    |       |                                   |
-    |       +--> SessionDispenser               |
-    |            (pre-created sessions)         |
-    |                                           |
-    +--> SubprocessTransport ---spawn---->  agent --print (per request)
-                                                |
-                                                v
-                                          Cursor API (cloud)
-                                                |
-                                                v
-                                        Claude / GPT / etc.
-```
+<img width="2816" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/c415aadf-1b76-4ce0-ae72-bc4250258e40" />
+
 
 ---
 
