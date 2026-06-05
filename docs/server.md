@@ -27,10 +27,26 @@ cursorpipe-server exposes an **OpenAI-compatible HTTP API** backed by the Cursor
 
 ## Starting the server
 
-```bash
-export CURSOR_API_KEY=crsr_your_key_here
-cursorpipe-server
-```
+=== "bash / macOS / Linux / WSL"
+
+    ```bash
+    export CURSOR_API_KEY=crsr_your_key_here
+    cursorpipe-server
+    ```
+
+=== "PowerShell (Windows)"
+
+    ```powershell
+    $env:CURSOR_API_KEY = "crsr_your_key_here"
+    cursorpipe-server
+    ```
+
+=== "CMD (Windows)"
+
+    ```cmd
+    set CURSOR_API_KEY=crsr_your_key_here
+    cursorpipe-server
+    ```
 
 Or with `python -m`:
 
@@ -44,7 +60,9 @@ The server starts on `http://0.0.0.0:8080` by default.
 
 ## Configuration
 
-All settings are loaded from environment variables (prefix `CURSORPIPE_`) or a `.env` file:
+All settings are loaded from environment variables (prefix `CURSORPIPE_`) or a `.env` file. See the full [Configuration reference](configuration.md) for all variables.
+
+Key server variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -52,9 +70,7 @@ All settings are loaded from environment variables (prefix `CURSORPIPE_`) or a `
 | `CURSORPIPE_PORT` | `8080` | Bind port |
 | `CURSORPIPE_POOL_SIZE` | `5` | ACP sessions to pre-create at startup |
 | `CURSORPIPE_BEARER_TOKEN` | `""` | When set, all requests (except `/health`) must include `Authorization: Bearer <token>` |
-| `CURSORPIPE_API_KEY` | `""` | Cursor API key passed to the agent CLI |
-
-All [core configuration](getting-started.md) variables (`CURSORPIPE_STRATEGY`, `CURSORPIPE_REQUEST_TIMEOUT_S`, etc.) also apply.
+| `CURSOR_API_KEY` | `""` | Cursor API key (also accepted as `CURSORPIPE_API_KEY`) |
 
 ---
 
@@ -239,10 +255,26 @@ curl http://localhost:8080/v1/chat/completions \
 
 To protect your server with a bearer token:
 
-```bash
-export CURSORPIPE_BEARER_TOKEN=my-secret-token
-cursorpipe-server
-```
+=== "bash / macOS / Linux / WSL"
+
+    ```bash
+    export CURSORPIPE_BEARER_TOKEN=my-secret-token
+    cursorpipe-server
+    ```
+
+=== "PowerShell (Windows)"
+
+    ```powershell
+    $env:CURSORPIPE_BEARER_TOKEN = "my-secret-token"
+    cursorpipe-server
+    ```
+
+=== "CMD (Windows)"
+
+    ```cmd
+    set CURSORPIPE_BEARER_TOKEN=my-secret-token
+    cursorpipe-server
+    ```
 
 Clients must then include:
 

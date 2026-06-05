@@ -138,20 +138,27 @@ class CursorClient:
         self._active_requests += 1
         try:
             if self._should_use_acp():
+                acp_error: CursorPipeError | None = None
                 try:
                     result = await self._get_acp().prompt(
                         model, full_prompt, timeout_s=timeout_s,
                     )
                     return result.text
-                except CursorPipeError:
+                except CursorPipeError as exc:
                     if self._config.strategy == Strategy.ACP:
                         raise
-                    logger.warning("ACP failed, falling back to subprocess")
+                    acp_error = exc
+                    logger.warning("ACP failed, falling back to subprocess: %s", exc)
 
-            result = await self._get_subprocess().generate(
-                model, full_prompt, timeout_s=timeout_s,
-            )
-            return result.text
+            try:
+                result = await self._get_subprocess().generate(
+                    model, full_prompt, timeout_s=timeout_s,
+                )
+                return result.text
+            except CursorPipeError as subproc_err:
+                if acp_error is not None:
+                    raise subproc_err from acp_error
+                raise
         finally:
             self._active_requests -= 1
 
@@ -191,21 +198,28 @@ class CursorClient:
         self._active_requests += 1
         try:
             if self._should_use_acp():
+                acp_error: CursorPipeError | None = None
                 try:
                     async for chunk in self._get_acp().prompt_stream(
                         model, full_prompt, timeout_s=timeout_s,
                     ):
                         yield chunk
                     return
-                except CursorPipeError:
+                except CursorPipeError as exc:
                     if self._config.strategy == Strategy.ACP:
                         raise
-                    logger.warning("ACP streaming failed, falling back to subprocess")
+                    acp_error = exc
+                    logger.warning("ACP streaming failed, falling back to subprocess: %s", exc)
 
-            async for chunk in self._get_subprocess().generate_stream(
-                model, full_prompt, timeout_s=timeout_s,
-            ):
-                yield chunk
+            try:
+                async for chunk in self._get_subprocess().generate_stream(
+                    model, full_prompt, timeout_s=timeout_s,
+                ):
+                    yield chunk
+            except CursorPipeError as subproc_err:
+                if acp_error is not None:
+                    raise subproc_err from acp_error
+                raise
         finally:
             self._active_requests -= 1
 

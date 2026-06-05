@@ -125,7 +125,8 @@ async def list_models(request: Request):
     try:
         names = await client.list_models()
     except Exception:
-        logger.warning("list_models failed, returning empty list", exc_info=True)
+        logger.error("list_models failed; returning empty list to preserve client compatibility",
+                     exc_info=True)
         names = []
 
     return ModelListResponse(

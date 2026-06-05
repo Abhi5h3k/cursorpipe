@@ -45,6 +45,8 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Configuration: configuration.md
+  - How to create a Cursor API key: cursor-api-key.md
   - HTTP Server: server.md
   - Docker: docker.md
   - Examples: examples.md

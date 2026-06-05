@@ -228,6 +228,7 @@ All exceptions inherit from `CursorPipeError`:
 | `AgentTimeoutError` | Request exceeded timeout |
 | `RateLimitError` | Cursor returned 429 |
 | `AgentCrashError` | Agent process exited unexpectedly |
+| `NetworkError` | Agent could not reach the Cursor API (DNS, TLS, proxy) |
 | `SessionError` | ACP session error |
 
 ```python

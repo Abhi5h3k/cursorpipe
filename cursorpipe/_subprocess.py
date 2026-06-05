@@ -11,24 +11,53 @@ import asyncio
 import json
 import logging
 import os
+import re
 import tempfile
 from collections.abc import AsyncIterator
 from pathlib import Path
 
 from cursorpipe._config import CursorPipeConfig
-from cursorpipe._errors import AgentCrashError, AgentTimeoutError, RateLimitError
+from cursorpipe._errors import AgentCrashError, AgentTimeoutError, NetworkError, RateLimitError
 from cursorpipe._models import CompletionResult
 from cursorpipe._ndjson import StreamAccumulator, iter_ndjson_lines
 from cursorpipe._resolve import resolve_agent_command
 
 logger = logging.getLogger(__name__)
 
-_RATE_LIMIT_PATTERN_PARTS = ("429", "rate", "too many requests")
+# Strict word-boundary pattern — avoids false positives on words like
+# "generate", "separate", "accurate", "iterate" that contain "rate" as a substring.
+_RATE_LIMIT_RE = re.compile(
+    r"\b429\b|\brate[\s_-]?limit|\btoo\s+many\s+requests\b",
+    re.IGNORECASE,
+)
+
+_NETWORK_ERROR_PATTERNS = (
+    "unable to get local issuer certificate",
+    "could not resolve host",
+    "connection refused",
+    "check that your proxy",
+    "failed to reach the cursor api",
+    "econnrefused",
+    "enotfound",
+    "etimedout",
+    "certificate verify failed",
+    "ssl",
+)
 
 
 def _is_rate_limited(stderr: str) -> bool:
+    return bool(_RATE_LIMIT_RE.search(stderr))
+
+
+def _is_network_error(stderr: str) -> bool:
     lower = stderr.lower()
-    return any(part in lower for part in _RATE_LIMIT_PATTERN_PARTS)
+    return any(p in lower for p in _NETWORK_ERROR_PATTERNS)
+
+
+def _last_meaningful_line(stderr: str) -> str:
+    """Return the last non-empty line of stderr, or the whole string if short."""
+    lines = [ln.strip() for ln in stderr.splitlines() if ln.strip()]
+    return lines[-1] if lines else stderr.strip()
 
 
 def _build_args(
@@ -92,9 +121,10 @@ class SubprocessTransport:
 
             stderr_text = stderr_bytes.decode("utf-8", errors="replace")
             if _is_rate_limited(stderr_text):
-                raise RateLimitError()
-
+                raise RateLimitError(detail=stderr_text)
             if proc.returncode != 0:
+                if _is_network_error(stderr_text):
+                    raise NetworkError(_last_meaningful_line(stderr_text))
                 raise AgentCrashError(proc.returncode or -1, stderr_text)
 
             stdout_text = stdout_bytes.decode("utf-8", errors="replace").strip()
@@ -148,7 +178,9 @@ class SubprocessTransport:
                 stderr_bytes = await proc.stderr.read() if proc.stderr else b""
                 stderr_text = stderr_bytes.decode("utf-8", errors="replace")
                 if _is_rate_limited(stderr_text):
-                    raise RateLimitError()
+                    raise RateLimitError(detail=stderr_text)
+                if _is_network_error(stderr_text):
+                    raise NetworkError(_last_meaningful_line(stderr_text))
                 raise AgentCrashError(proc.returncode, stderr_text)
         finally:
             Path(tmp).unlink(missing_ok=True)

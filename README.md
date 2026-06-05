@@ -14,7 +14,7 @@
 
 If you have a [Cursor](https://cursor.com) subscription, you already have access to frontier models (Claude, GPT, etc.) through the Cursor Agent CLI. **cursorpipe** lets you use those models programmatically — from Python, from any language via HTTP, or from any LLM tool via Docker.
 
-No separate API keys needed. One Cursor subscription, three ways to use it.
+No OpenAI or Anthropic API keys needed. One Cursor subscription, three ways to use it.
 
 ---
 
@@ -25,9 +25,18 @@ No separate API keys needed. One Cursor subscription, three ways to use it.
 Turn your Cursor subscription into a self-hosted LLM API with one command. Works with **any language**, **any framework**, **any tool** that speaks the OpenAI protocol.
 
 ```bash
+# bash / macOS / Linux / WSL
 git clone https://github.com/Abhi5h3k/cursorpipe.git
 cd cursorpipe
 export CURSOR_API_KEY=crsr_your_key_here
+docker compose up
+```
+
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe
+$env:CURSOR_API_KEY = "crsr_your_key_here"
 docker compose up
 ```
 
@@ -47,8 +56,16 @@ Works out of the box with OpenAI SDK, LangChain, LiteLLM, Open WebUI, LobeChat, 
 ### 2. HTTP Server — standalone (no Docker)
 
 ```bash
+# bash / macOS / Linux / WSL
 pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
 export CURSOR_API_KEY=crsr_your_key_here
+cursorpipe-server
+```
+
+```powershell
+# Windows (PowerShell)
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+$env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
 
@@ -101,12 +118,26 @@ irm 'https://cursor.com/install?win32=true' | iex
 ```bash
 # Interactive login (local dev)
 agent login
+```
 
-# OR set an API key (scripts / CI / Docker)
+```bash
+# OR set an API key — bash / macOS / Linux / WSL
 export CURSOR_API_KEY=crsr_your_key_here
 ```
 
-Get your API key at [cursor.com/dashboard/cloud-agents](https://cursor.com/dashboard/cloud-agents).
+```powershell
+# OR set an API key — Windows (PowerShell)
+$env:CURSOR_API_KEY = "crsr_your_key_here"
+```
+
+```cmd
+REM OR set an API key — Windows (CMD)
+set CURSOR_API_KEY=crsr_your_key_here
+```
+
+Get your API key at [cursor.com/dashboard/api](https://cursor.com/dashboard/api?section=user-keys#user-api-keys) — see [How to create a Cursor API key](https://abhi5h3k.github.io/cursorpipe/cursor-api-key/) for a step-by-step guide.
+
+> **Corporate / proxy environments:** In networks with a TLS-intercepting proxy (e.g. Zscaler), the `agent` binary's outbound connection to `cursor.sh` may be blocked or fail with a certificate error. Ask your network team to whitelist `*.cursor.sh` and `*.cursor.com`, or point the agent to your corporate CA via `SSL_CERT_FILE` / `NODE_EXTRA_CA_CERTS`.
 
 ---
 
@@ -276,7 +307,7 @@ session.discard()
 
 ## Configuration
 
-All settings load from environment variables (prefix `CURSORPIPE_`) or a `.env` file.
+All settings load from environment variables (prefix `CURSORPIPE_`) or a `.env` file. See the full [Configuration reference](https://abhi5h3k.github.io/cursorpipe/configuration/) in the docs.
 
 ### Core settings
 

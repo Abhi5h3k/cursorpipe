@@ -18,14 +18,14 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from cursorpipe._config import CursorPipeConfig
-from cursorpipe._json import dumps as _dumps
-from cursorpipe._json import loads as _loads
 from cursorpipe._errors import (
     AgentCrashError,
     AgentTimeoutError,
     AuthenticationError,
     SessionError,
 )
+from cursorpipe._json import dumps as _dumps
+from cursorpipe._json import loads as _loads
 from cursorpipe._models import CompletionResult
 from cursorpipe._pool import SessionDispenser
 from cursorpipe._resolve import resolve_agent_command
@@ -71,7 +71,10 @@ class AcpTransport:
     async def _start(self) -> None:
         cmd = resolve_agent_command(self._config)
         auth_args = self._config.resolve_auth_args()
-        args = [*cmd, *auth_args, "--trust", "acp"]
+        # 'acp' must be the subcommand (first positional), not a value for a
+        # preceding flag.  --trust is for interactive/print mode only; ACP
+        # handles permissions via JSON-RPC session/request_permission.
+        args = [*cmd, "acp", *auth_args]
 
         env = {**os.environ, **self._config.resolve_auth_env()}
 
@@ -182,12 +185,16 @@ class AcpTransport:
         if params is not None:
             payload["params"] = params
 
+        # Register future BEFORE writing: drain() yields to the event loop, which
+        # can run _read_loop and dispatch the response before the future is added.
+        # If the future isn't registered yet, _dispatch drops the response silently.
+        future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
+        self._pending[msg_id] = future
+
         line = _dumps(payload) + "\n"
         self._process.stdin.write(line.encode("utf-8"))
         await self._process.stdin.drain()
 
-        future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
-        self._pending[msg_id] = future
         return await future
 
     def _respond(self, msg_id: int, result: dict) -> None:
@@ -221,12 +228,22 @@ class AcpTransport:
         except Exception:
             logger.exception("ACP read loop error")
         finally:
-            # Process exited — cancel all pending futures
+            # Collect stderr only if the process actually exited (returncode is set).
+            # When _read_loop is cancelled (e.g. during close()), the process is still
+            # running and stderr.read() would block until it exits — causing a deadlock
+            # because close() terminates the process only AFTER awaiting the reader task.
+            stderr_text = ""
+            exit_code = self._process.returncode if self._process else -1
+            if exit_code is not None and self._process and self._process.stderr:
+                try:
+                    stderr_bytes = await self._process.stderr.read()
+                    stderr_text = stderr_bytes.decode("utf-8", errors="replace")
+                except Exception:
+                    pass
+            crash_err = AgentCrashError(exit_code if exit_code is not None else -1, stderr_text)
             for fut in self._pending.values():
                 if not fut.done():
-                    fut.set_exception(AgentCrashError(
-                        self._process.returncode if self._process else -1,
-                    ))
+                    fut.set_exception(crash_err)
             self._pending.clear()
 
     def _dispatch(self, msg: dict[str, Any]) -> None:
@@ -396,7 +413,7 @@ class AcpTransport:
             chunk_count = 0
             t_first_chunk = 0.0
             t_last_chunk = t_start
-            chunk_gaps: list[float] = [] if profiling else []
+            chunk_gaps: list[float] = []
 
             while not done_event.is_set():
                 remaining = deadline - loop.time()
@@ -466,17 +483,3 @@ class AcpTransport:
             return content.get("text", "")
         return ""
 
-    # ------------------------------------------------------------------
-    # Auto-restart
-    # ------------------------------------------------------------------
-
-    async def _ensure_alive_or_restart(self) -> None:
-        """Restart the ACP process if it crashed, up to max_restarts."""
-        if self._process is not None and self._process.returncode is None:
-            return
-        if self._restart_count >= self._config.acp_max_restarts:
-            rc = self._process.returncode if self._process else -1
-            raise AgentCrashError(rc, "Max ACP restarts exceeded")
-        self._restart_count += 1
-        logger.warning("ACP process died, restarting (attempt %d)", self._restart_count)
-        await self._start()

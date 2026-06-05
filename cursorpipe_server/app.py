@@ -21,6 +21,7 @@ from cursorpipe._errors import (
     AgentTimeoutError,
     AuthenticationError,
     CursorPipeError,
+    NetworkError,
     RateLimitError,
     SessionError,
 )
@@ -131,6 +132,17 @@ def create_app(server_config: ServerConfig | None = None) -> FastAPI:
             status_code=429,
             content=ErrorResponse(
                 error=ErrorDetail(message=str(exc), type="rate_limit_error", code="rate_limited")
+            ).model_dump(),
+        )
+
+    @app.exception_handler(NetworkError)
+    async def _network_error(_req: Request, exc: NetworkError):
+        return JSONResponse(
+            status_code=502,
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    message=str(exc), type="upstream_unreachable", code="network_error"
+                )
             ).model_dump(),
         )
 

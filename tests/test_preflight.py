@@ -84,6 +84,10 @@ class TestAuthentication:
         has_api_key = bool(os.getenv("CURSOR_API_KEY") or os.getenv("CURSORPIPE_API_KEY"))
         has_auth_token = bool(os.getenv("CURSOR_AUTH_TOKEN") or os.getenv("CURSORPIPE_AUTH_TOKEN"))
 
+        if has_api_key or has_auth_token:
+            # Auth confirmed via env var — no need to shell out to `agent status`.
+            return
+
         has_login_session = False
         config = CursorPipeConfig()
         try:
@@ -98,7 +102,7 @@ class TestAuthentication:
         except (AgentNotFoundError, subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
-        assert has_api_key or has_auth_token or has_login_session, (
+        assert has_login_session, (
             "PREREQUISITE FAILED: No Cursor authentication found.\n\n"
             "FIX (pick one):\n"
             "  1. Run: agent login\n"

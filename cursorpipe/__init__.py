@@ -37,6 +37,7 @@ from cursorpipe._errors import (
     AgentTimeoutError,
     AuthenticationError,
     CursorPipeError,
+    NetworkError,
     RateLimitError,
     SessionError,
 )
@@ -61,6 +62,7 @@ __all__ = [
     "AgentTimeoutError",
     "RateLimitError",
     "AgentCrashError",
+    "NetworkError",
     "SessionError",
     # Module-level convenience
     "generate",

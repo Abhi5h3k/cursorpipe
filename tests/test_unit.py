@@ -20,6 +20,7 @@ from cursorpipe._errors import (
     AgentTimeoutError,
     AuthenticationError,
     CursorPipeError,
+    NetworkError,
     RateLimitError,
     SessionError,
 )
@@ -60,28 +61,29 @@ class TestConfig:
 
     def test_auth_env_resolution(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("CURSOR_API_KEY", "test-key-123")
-        cfg = CursorPipeConfig()
+        cfg = CursorPipeConfig(_env_file=None)
         env = cfg.resolve_auth_env()
         assert env["CURSOR_API_KEY"] == "test-key-123"
 
     def test_auth_config_overrides_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("CURSOR_API_KEY", "env-key")
-        cfg = CursorPipeConfig(api_key="config-key")
+        cfg = CursorPipeConfig(api_key="config-key", _env_file=None)
         env = cfg.resolve_auth_env()
         assert env["CURSOR_API_KEY"] == "config-key"
 
     def test_auth_args_with_api_key(self) -> None:
-        cfg = CursorPipeConfig(api_key="my-key")
+        cfg = CursorPipeConfig(api_key="my-key", _env_file=None)
         assert cfg.resolve_auth_args() == ["--api-key", "my-key"]
 
     def test_auth_args_empty_when_no_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("CURSOR_API_KEY", raising=False)
-        cfg = CursorPipeConfig()
+        monkeypatch.delenv("CURSORPIPE_API_KEY", raising=False)
+        cfg = CursorPipeConfig(_env_file=None)
         assert cfg.resolve_auth_args() == []
 
     def test_auth_args_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("CURSOR_API_KEY", "env-key-456")
-        cfg = CursorPipeConfig()
+        cfg = CursorPipeConfig(_env_file=None)
         assert cfg.resolve_auth_args() == ["--api-key", "env-key-456"]
 
     def test_enable_profiling_default_false(self) -> None:
@@ -573,3 +575,211 @@ class TestActiveRequests:
         )
         assert client.active_requests == 0
         assert max(observed) == 2
+
+
+# =========================================================================
+# Rate-limit detection regex (_subprocess._is_rate_limited)
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestRateLimitDetection:
+    """_is_rate_limited must match exact rate-limit signals only."""
+
+    def _check(self, text: str) -> bool:
+        from cursorpipe._subprocess import _is_rate_limited
+        return _is_rate_limited(text)
+
+    # --- should match ---
+    def test_bare_429(self) -> None:
+        assert self._check("Error 429") is True
+
+    def test_429_in_http_status_line(self) -> None:
+        assert self._check("HTTP/1.1 429 Too Many Requests") is True
+
+    def test_rate_limit_phrase(self) -> None:
+        assert self._check("rate limit exceeded") is True
+
+    def test_rate_limit_hyphenated(self) -> None:
+        assert self._check("rate-limit reached") is True
+
+    def test_rate_limit_underscored(self) -> None:
+        assert self._check("rate_limit") is True
+
+    def test_too_many_requests(self) -> None:
+        assert self._check("too many requests") is True
+
+    def test_too_many_requests_case_insensitive(self) -> None:
+        assert self._check("Too Many Requests") is True
+
+    # --- must NOT match ---
+    def test_generate_does_not_match(self) -> None:
+        """'generate' contains 'rate' as substring — must not fire."""
+        assert self._check("Generating response for model") is False
+
+    def test_separate_does_not_match(self) -> None:
+        assert self._check("separate execution paths") is False
+
+    def test_accurate_does_not_match(self) -> None:
+        assert self._check("accurate result") is False
+
+    def test_iterate_does_not_match(self) -> None:
+        assert self._check("iterate over tokens") is False
+
+    def test_corporate_does_not_match(self) -> None:
+        assert self._check("corporate proxy detected") is False
+
+    def test_moderate_does_not_match(self) -> None:
+        assert self._check("moderate complexity") is False
+
+    def test_proxy_reachable_does_not_match(self) -> None:
+        """The exact string from the bug report must not fire."""
+        assert self._check(
+            "Failed to reach the Cursor API. Check that your proxy is reachable."
+        ) is False
+
+    def test_empty_string(self) -> None:
+        assert self._check("") is False
+
+    def test_429_as_substring_of_number_does_not_match(self) -> None:
+        """e.g. a port number 14290 should not trigger the 429 match."""
+        assert self._check("listening on port 14290") is False
+
+
+# =========================================================================
+# Network error detection (_subprocess._is_network_error)
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestNetworkErrorDetection:
+    """_is_network_error must match known connectivity-failure phrases."""
+
+    def _check(self, text: str) -> bool:
+        from cursorpipe._subprocess import _is_network_error
+        return _is_network_error(text)
+
+    # --- should match ---
+    def test_tls_certificate(self) -> None:
+        assert self._check("T: [internal] unable to get local issuer certificate") is True
+
+    def test_could_not_resolve_host(self) -> None:
+        assert self._check("could not resolve host api2.cursor.sh") is True
+
+    def test_connection_refused(self) -> None:
+        assert self._check("connection refused") is True
+
+    def test_proxy_check(self) -> None:
+        assert self._check("Check that your proxy is reachable.") is True
+
+    def test_failed_to_reach_cursor_api(self) -> None:
+        assert self._check("Failed to reach the Cursor API.") is True
+
+    def test_econnrefused(self) -> None:
+        assert self._check("Error: ECONNREFUSED 127.0.0.1:443") is True
+
+    def test_enotfound(self) -> None:
+        assert self._check("getaddrinfo ENOTFOUND api2.cursor.sh") is True
+
+    def test_etimedout(self) -> None:
+        assert self._check("connect ETIMEDOUT") is True
+
+    def test_ssl_error(self) -> None:
+        assert self._check("SSLError: certificate verify failed") is True
+
+    # --- must NOT match ---
+    def test_plain_rate_limit_is_not_network(self) -> None:
+        assert self._check("rate limit exceeded") is False
+
+    def test_generic_crash_is_not_network(self) -> None:
+        assert self._check("Agent process exited with code 1") is False
+
+    def test_empty_string(self) -> None:
+        assert self._check("") is False
+
+
+# =========================================================================
+# NetworkError
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestNetworkError:
+    def test_inherits_cursor_pipe_error(self) -> None:
+        err = NetworkError("could not resolve host")
+        assert isinstance(err, CursorPipeError)
+
+    def test_detail_in_message(self) -> None:
+        err = NetworkError("ENOTFOUND api2.cursor.sh")
+        assert "ENOTFOUND api2.cursor.sh" in str(err)
+
+    def test_no_detail(self) -> None:
+        err = NetworkError()
+        assert "Cursor API" in str(err)
+        assert err.detail == ""
+
+    def test_catch_broadly(self) -> None:
+        try:
+            raise NetworkError("DNS failure")
+        except CursorPipeError as e:
+            assert isinstance(e, NetworkError)
+
+
+# =========================================================================
+# RateLimitError — detail / stderr preservation
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestRateLimitErrorDetail:
+    def test_detail_appears_in_message(self) -> None:
+        err = RateLimitError(detail="rate limit exceeded for user")
+        assert "rate limit exceeded for user" in str(err)
+
+    def test_no_detail_works(self) -> None:
+        err = RateLimitError()
+        assert "Rate-limited by Cursor" in str(err)
+
+    def test_retry_after_and_detail_combined(self) -> None:
+        err = RateLimitError(retry_after_s=30.0, detail="429 from upstream")
+        msg = str(err)
+        assert "30.0s" in msg
+        assert "429 from upstream" in msg
+
+    def test_detail_attribute(self) -> None:
+        err = RateLimitError(detail="raw agent stderr")
+        assert err.detail == "raw agent stderr"
+
+
+# =========================================================================
+# AgentCrashError — full stderr retention + message cap
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestAgentCrashErrorFullStderr:
+    def test_full_stderr_on_attribute(self) -> None:
+        long_stderr = "x" * 10_000
+        err = AgentCrashError(1, long_stderr)
+        assert err.stderr == long_stderr  # attribute is never truncated
+
+    def test_message_capped_at_4000(self) -> None:
+        long_stderr = "a" * 10_000
+        err = AgentCrashError(1, long_stderr)
+        msg = str(err)
+        # Message must not embed all 10k chars
+        assert len(msg) < 10_000
+
+    def test_truncation_notice_in_message(self) -> None:
+        long_stderr = "b" * 10_000
+        err = AgentCrashError(1, long_stderr)
+        assert "truncated" in str(err) or "chars" in str(err)
+
+    def test_short_stderr_not_truncated_in_message(self) -> None:
+        stderr = "out of memory"
+        err = AgentCrashError(137, stderr)
+        assert "out of memory" in str(err)
+
+    def test_exit_code_preserved(self) -> None:
+        err = AgentCrashError(42, "boom")
+        assert err.exit_code == 42

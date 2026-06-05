@@ -10,11 +10,21 @@
 
 Turn your Cursor subscription into a self-hosted LLM API with one command. Works with **any language**, **any framework**, **any tool** that speaks the OpenAI protocol.
 
-```bash
-git clone https://github.com/Abhi5h3k/cursorpipe.git && cd cursorpipe
-export CURSOR_API_KEY=crsr_your_key_here
-docker compose up
-```
+=== "bash / macOS / Linux / WSL"
+
+    ```bash
+    git clone https://github.com/Abhi5h3k/cursorpipe.git && cd cursorpipe
+    export CURSOR_API_KEY=crsr_your_key_here
+    docker compose up
+    ```
+
+=== "PowerShell (Windows)"
+
+    ```powershell
+    git clone https://github.com/Abhi5h3k/cursorpipe.git; cd cursorpipe
+    $env:CURSOR_API_KEY = "crsr_your_key_here"
+    docker compose up
+    ```
 
 ### HTTP Server — standalone
 

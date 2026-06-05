@@ -42,19 +42,33 @@ Pick one:
 
 === "API key (scripts / CI / Docker)"
 
-    Get your key at [cursor.com/dashboard/cloud-agents](https://cursor.com/dashboard/cloud-agents), then:
+    Create a key at [cursor.com/dashboard/api](https://cursor.com/dashboard/api?section=user-keys#user-api-keys) — see [How to create a Cursor API key](cursor-api-key.md) for a step-by-step walkthrough.
 
-    ```bash
-    # As an environment variable
-    export CURSORPIPE_API_KEY=crsr_your_key_here
+    === "bash / macOS / Linux / WSL"
 
-    # Or in a .env file (pydantic-settings loads it automatically)
-    echo "CURSORPIPE_API_KEY=crsr_your_key_here" > .env
-    ```
+        ```bash
+        export CURSOR_API_KEY=crsr_your_key_here
+        ```
 
-    !!! note
-        Use `CURSORPIPE_API_KEY` in `.env` files (pydantic-settings prefix).
-        As an OS environment variable, both `CURSORPIPE_API_KEY` and `CURSOR_API_KEY` work.
+    === "PowerShell (Windows)"
+
+        ```powershell
+        $env:CURSOR_API_KEY = "crsr_your_key_here"
+        ```
+
+    === "CMD (Windows)"
+
+        ```cmd
+        set CURSOR_API_KEY=crsr_your_key_here
+        ```
+
+    === ".env file (any platform)"
+
+        ```bash
+        CURSOR_API_KEY=crsr_your_key_here
+        ```
+
+        Place `.env` in the directory where you run `cursorpipe-server`. Both `CURSOR_API_KEY` and `CURSORPIPE_API_KEY` are accepted.
 
 ---
 
@@ -64,12 +78,23 @@ Pick one:
 
     The fastest way to get an OpenAI-compatible API running. No Python needed on the host.
 
-    ```bash
-    git clone https://github.com/Abhi5h3k/cursorpipe.git
-    cd cursorpipe
-    export CURSOR_API_KEY=crsr_your_key_here
-    docker compose up
-    ```
+    === "bash / macOS / Linux / WSL"
+
+        ```bash
+        git clone https://github.com/Abhi5h3k/cursorpipe.git
+        cd cursorpipe
+        export CURSOR_API_KEY=crsr_your_key_here
+        docker compose up
+        ```
+
+    === "PowerShell (Windows)"
+
+        ```powershell
+        git clone https://github.com/Abhi5h3k/cursorpipe.git
+        cd cursorpipe
+        $env:CURSOR_API_KEY = "crsr_your_key_here"
+        docker compose up
+        ```
 
     Test it:
 
@@ -85,11 +110,21 @@ Pick one:
 
     Run the OpenAI-compatible server without Docker:
 
-    ```bash
-    pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
-    export CURSOR_API_KEY=crsr_your_key_here
-    cursorpipe-server
-    ```
+    === "bash / macOS / Linux / WSL"
+
+        ```bash
+        pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+        export CURSOR_API_KEY=crsr_your_key_here
+        cursorpipe-server
+        ```
+
+    === "PowerShell (Windows)"
+
+        ```powershell
+        pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+        $env:CURSOR_API_KEY = "crsr_your_key_here"
+        cursorpipe-server
+        ```
 
     Server starts on `http://localhost:8080`. See [HTTP Server](server.md) for full docs.
 
@@ -175,3 +210,9 @@ pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
 ```
 
 That's it! Check out the [Examples](examples.md) page for streaming, sessions, framework integration, and more. Or jump to [HTTP Server](server.md) / [Docker](docker.md) if you want the language-agnostic API.
+
+---
+
+## Configuration
+
+All behaviour is controlled via environment variables (prefix `CURSORPIPE_`) or a `.env` file — including port, timeouts, pool size, and transport strategy. See the full [Configuration reference](configuration.md).

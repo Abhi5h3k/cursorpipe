@@ -12,7 +12,7 @@ import os
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
 
@@ -27,7 +27,12 @@ class Strategy(StrEnum):
 class CursorPipeConfig(BaseSettings):
     """All tunables for cursorpipe, loadable from env vars."""
 
-    model_config = {"env_prefix": "CURSORPIPE_", "env_file": ".env", "extra": "ignore"}
+    model_config = {
+        "env_prefix": "CURSORPIPE_",
+        "env_file": ".env",
+        "extra": "ignore",
+        "populate_by_name": True,
+    }
 
     # -- Agent binary ----------------------------------------------------------
     agent_bin: str = Field(
@@ -50,8 +55,16 @@ class CursorPipeConfig(BaseSettings):
     )
 
     # -- Auth ------------------------------------------------------------------
-    api_key: str = Field(default="", description="Cursor API key.")
-    auth_token: str = Field(default="", description="Cursor auth token.")
+    api_key: str = Field(
+        default="",
+        description="Cursor API key.",
+        validation_alias=AliasChoices("CURSORPIPE_API_KEY", "CURSOR_API_KEY"),
+    )
+    auth_token: str = Field(
+        default="",
+        description="Cursor auth token.",
+        validation_alias=AliasChoices("CURSORPIPE_AUTH_TOKEN", "CURSOR_AUTH_TOKEN"),
+    )
 
     # -- Strategy / behaviour --------------------------------------------------
     strategy: Strategy = Field(
@@ -100,12 +113,10 @@ class CursorPipeConfig(BaseSettings):
     def resolve_auth_env(self) -> dict[str, str]:
         """Return env-var overrides for the agent subprocess."""
         env: dict[str, str] = {}
-        api_key = self.api_key or os.getenv("CURSOR_API_KEY", "")
-        auth_token = self.auth_token or os.getenv("CURSOR_AUTH_TOKEN", "")
-        if api_key:
-            env["CURSOR_API_KEY"] = api_key
-        if auth_token:
-            env["CURSOR_AUTH_TOKEN"] = auth_token
+        if self.api_key:
+            env["CURSOR_API_KEY"] = self.api_key
+        if self.auth_token:
+            env["CURSOR_AUTH_TOKEN"] = self.auth_token
         return env
 
     def resolve_auth_args(self) -> list[str]:
@@ -115,9 +126,8 @@ class CursorPipeConfig(BaseSettings):
         ``auth_token`` is passed via env var only (see ``resolve_auth_env``).
         When neither is set, the agent uses the session from ``agent login``.
         """
-        api_key = self.api_key or os.getenv("CURSOR_API_KEY", "")
-        if api_key:
-            return ["--api-key", api_key]
+        if self.api_key:
+            return ["--api-key", self.api_key]
         return []
 
     def resolve_node_paths(self) -> tuple[str, str]:

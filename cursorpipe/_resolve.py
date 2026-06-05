@@ -73,9 +73,12 @@ def resolve_agent_command(config: CursorPipeConfig) -> list[str]:
         if node or script:
             searched.append(f"node={node}, script={script}")
 
-    # 3. PATH lookup
+    # 3. PATH lookup — skip shell script wrappers (.cmd/.bat) on Windows.
+    # Those wrappers chain cmd.exe → powershell.exe → node.exe; PowerShell
+    # buffers node's stdout, which breaks ACP's persistent readline() loop.
+    # Skipping here lets step 4 resolve node.exe + index.js directly.
     on_path = shutil.which("agent")
-    if on_path:
+    if on_path and not on_path.lower().endswith((".cmd", ".bat")):
         return [on_path]
     searched.append("PATH (agent)")
 
@@ -91,8 +94,3 @@ def resolve_agent_command(config: CursorPipeConfig) -> list[str]:
         searched.append(str(loc))
 
     raise AgentNotFoundError(searched)
-
-
-def check_agent_available(config: CursorPipeConfig) -> list[str]:
-    """Like ``resolve_agent_command`` but returns the command or raises with helpful detail."""
-    return resolve_agent_command(config)

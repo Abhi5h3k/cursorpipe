@@ -6,16 +6,23 @@ Run cursorpipe-server as a Docker container — one command to turn your Cursor 
 
 ## Quick start
 
-```bash
-git clone https://github.com/Abhi5h3k/cursorpipe.git
-cd cursorpipe
+=== "bash / macOS / Linux / WSL"
 
-# Set your Cursor API key
-export CURSOR_API_KEY=crsr_your_key_here
+    ```bash
+    git clone https://github.com/Abhi5h3k/cursorpipe.git
+    cd cursorpipe
+    export CURSOR_API_KEY=crsr_your_key_here
+    docker compose up
+    ```
 
-# Build and start
-docker compose up
-```
+=== "PowerShell (Windows)"
+
+    ```powershell
+    git clone https://github.com/Abhi5h3k/cursorpipe.git
+    cd cursorpipe
+    $env:CURSOR_API_KEY = "crsr_your_key_here"
+    docker compose up
+    ```
 
 The server is now running on `http://localhost:8080`.
 
@@ -154,10 +161,19 @@ services:
 
 Protect your server from unauthorized access:
 
-```bash
-export CURSORPIPE_BEARER_TOKEN=my-secret-token
-docker compose up
-```
+=== "bash / macOS / Linux / WSL"
+
+    ```bash
+    export CURSORPIPE_BEARER_TOKEN=my-secret-token
+    docker compose up
+    ```
+
+=== "PowerShell (Windows)"
+
+    ```powershell
+    $env:CURSORPIPE_BEARER_TOKEN = "my-secret-token"
+    docker compose up
+    ```
 
 Clients must include `Authorization: Bearer my-secret-token` on every request (except `/health`).
 

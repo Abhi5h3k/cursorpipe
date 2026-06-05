@@ -49,23 +49,44 @@ class AgentTimeoutError(CursorPipeError):
 class RateLimitError(CursorPipeError):
     """Cursor returned a 429 / rate-limit response."""
 
-    def __init__(self, retry_after_s: float | None = None) -> None:
+    def __init__(self, retry_after_s: float | None = None, detail: str = "") -> None:
         self.retry_after_s = retry_after_s
+        self.detail = detail
         msg = "Rate-limited by Cursor."
         if retry_after_s is not None:
             msg += f" Retry after {retry_after_s}s."
+        if detail:
+            msg += f"\nAgent output: {detail}"
         super().__init__(msg)
 
 
 class AgentCrashError(CursorPipeError):
     """The agent process exited unexpectedly."""
 
+    _MSG_CAP = 4000
+
     def __init__(self, exit_code: int, stderr: str = "") -> None:
         self.exit_code = exit_code
-        self.stderr = stderr
+        self.stderr = stderr  # always the full, untruncated text
         msg = f"Agent process crashed (exit code {exit_code})."
         if stderr:
-            msg += f"\nstderr: {stderr[:500]}"
+            msg += f"\nstderr: {stderr[:self._MSG_CAP]}"
+            if len(stderr) > self._MSG_CAP:
+                msg += (
+                    f"\n... ({len(stderr) - self._MSG_CAP} chars truncated; "
+                    "full text on exc.stderr)"
+                )
+        super().__init__(msg)
+
+
+class NetworkError(CursorPipeError):
+    """Agent binary could not reach the Cursor API (DNS, TLS, proxy, or connectivity)."""
+
+    def __init__(self, detail: str = "") -> None:
+        self.detail = detail
+        msg = "Agent could not reach the Cursor API."
+        if detail:
+            msg += f"\nDetail: {detail}"
         super().__init__(msg)
 
 
