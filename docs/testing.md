@@ -50,6 +50,18 @@ End-to-end tests that make **real API calls** through the Cursor agent.  These a
 pytest tests/test_integration.py -v -m integration
 ```
 
+By default all integration tests use the `auto` model (Cursor picks the best available model for your account).  Override this with the `CURSORPIPE_TEST_MODEL` environment variable to target a specific model:
+
+```bash
+# bash / macOS / Linux / WSL
+export CURSORPIPE_TEST_MODEL=claude-4.5-sonnet-thinking
+pytest tests/test_integration.py -v -m integration
+
+# Windows (PowerShell)
+$env:CURSORPIPE_TEST_MODEL = "claude-4.5-sonnet-thinking"
+pytest tests/test_integration.py -v -m integration
+```
+
 | Test | What it verifies |
 |------|-----------------|
 | Subprocess generate | Single-call via subprocess transport |

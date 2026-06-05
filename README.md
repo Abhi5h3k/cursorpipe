@@ -152,6 +152,8 @@ Get your API key at [cursor.com/dashboard/api](https://cursor.com/dashboard/api?
 
 ## HTTP API Reference
 
+See the full [API reference](https://abhi5h3k.github.io/cursorpipe/api-reference/) for schemas, error codes, and streaming details.
+
 ### POST `/v1/chat/completions`
 
 OpenAI-compatible chat completions. Supports streaming (SSE) and non-streaming.
@@ -348,7 +350,7 @@ All settings load from environment variables (prefix `CURSORPIPE_`) or a `.env` 
 
 ## Examples
 
-The [`examples/`](examples/) folder has runnable scripts for every feature:
+The [`examples/`](examples/) folder has runnable scripts for every feature. See the [examples docs](https://abhi5h3k.github.io/cursorpipe/examples/) for annotated walkthroughs.
 
 | Example | What it shows |
 |---------|---------------|
@@ -379,6 +381,8 @@ pytest tests/test_unit.py -v        # Fast, offline
 pytest tests/test_integration.py -v # Real API calls (slow)
 pytest -v                           # Everything
 ```
+
+See the [full testing guide](https://abhi5h3k.github.io/cursorpipe/testing/) for HTTP server tests, environment setup, and per-test descriptions.
 
 ---
 
