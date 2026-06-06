@@ -1,5 +1,8 @@
 # cursorpipe v2
 
+<img width="2752" height="1536" alt="cursorpipe v2" src="https://github.com/user-attachments/assets/34f432f4-5c21-4d65-9e45-c80f7a1d7b9c" />
+
+
 An OpenAI-compatible HTTP server powered by the official [Cursor Python SDK](https://cursor.com/docs/sdk/python).
 
 Point any OpenAI client at `http://localhost:8080` and use Cursor's models without code changes.
@@ -273,27 +276,8 @@ parameters are accepted in the request body and silently ignored.
 
 ## Architecture
 
-```
-Client (any OpenAI-compatible tool)
-        │
-        ▼
-  FastAPI server (cursorpipe_server)
-  ├── CORS middleware
-  ├── Request-ID + logging middleware
-  ├── Bearer token auth (optional)
-  ├── POST /v1/chat/completions
-  │     ├── Stateless → AsyncAgent.prompt() / messages()
-  │     └── Stateful  → SessionStore → AsyncAgent.send() / messages()
-  ├── GET /v1/models
-  ├── GET|POST|DELETE /v1/sessions
-  └── GET /health
-        │
-        ▼
-  cursor-sdk AsyncClient (bridge, one per process)
-        │
-        ▼
-  Cursor backend (models, completions)
-```
+<img width="2752" height="1536" alt="cursorpipe v2 Architecture" src="https://github.com/user-attachments/assets/d695b118-998a-4120-9374-809bda663b54" />
+
 
 ---
 
