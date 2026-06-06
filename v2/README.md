@@ -22,8 +22,6 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 - **Structured logging** — configurable log level via env var
 - **Docker** — one command to run anywhere
 
-<img width="2752" height="1536" alt="cursorpipe v2 Architecture" src="https://github.com/user-attachments/assets/d695b118-998a-4120-9374-809bda663b54" />
-
 ---
 
 ## Installation
@@ -288,7 +286,7 @@ parameters are accepted in the request body and silently ignored.
 | | v1 | v2 |
 |---|---|---|
 | Backend | Cursor Agent CLI (ACP/stdin-stdout) | Cursor Python SDK (`cursor-sdk`) |
-| Auth | `agent login` session (no API key) | `CURSOR_API_KEY` required |
+| Auth | `CURSOR_API_KEY` **or** `agent login` (no API key needed) | `CURSOR_API_KEY` required |
 | Sessions | Stateless only | Stateless + opt-in stateful |
 | Streaming | Yes | Yes |
 | Thinking | No | Yes (opt-in) |
