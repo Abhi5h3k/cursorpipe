@@ -4,6 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Cursor CLI](https://img.shields.io/badge/cursor%20cli-v2026.03.25-purple.svg)](https://cursor.com/docs/cli/installation)
 
+> **Two versions available:**
+> - **[v2 (recommended)](v2/README.md)** — SDK-based, requires `CURSOR_API_KEY`, adds stateful sessions, thinking support, and CORS
+> - **v1 (legacy)** — CLI-based, works with `agent login` (no API key needed) — you are reading it
 
 **Async Python client and OpenAI-compatible HTTP server for the Cursor Agent CLI** — pipe prompts to frontier LLMs via [ACP (Agent Client Protocol)](https://cursor.com/docs/cli/acp) with persistent sessions, streaming, and per-call model selection.
 
@@ -63,14 +66,14 @@ Works out of the box with OpenAI SDK, LangChain, LiteLLM, Open WebUI, LobeChat, 
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.0"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.0"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
@@ -80,7 +83,7 @@ Server starts on `http://localhost:8080` with OpenAI-compatible endpoints.
 ### 3. Python Library — async-first
 
 ```bash
-pip install git+https://github.com/Abhi5h3k/cursorpipe.git
+pip install "cursorpipe @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.0"
 ```
 
 ```python

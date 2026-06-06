@@ -53,3 +53,9 @@ nav:
   - API Reference: api-reference.md
   - Architecture: architecture.md
   - Testing: testing.md
+  - "v2 (SDK-based)":
+      - Overview: v2/index.md
+      - Configuration: v2/config.md
+      - API Reference: v2/api.md
+      - Thinking / Reasoning: v2/thinking.md
+      - SDK Limitations: v2/limitations.md
