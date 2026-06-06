@@ -28,12 +28,84 @@ Point any OpenAI-compatible client at `http://localhost:8080` and use Cursor's f
 
 ## Quick start
 
-### Option 1 — Python (with uv)
+### Option 1 — pip install (simplest)
 
 ```bash
-cd v2
+# bash / macOS / Linux / WSL
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
+export CURSOR_API_KEY=crsr_your_key_here
+cursorpipe-server
+```
 
-# Windows (OneDrive): set UV_LINK_MODE=copy first
+```powershell
+# Windows (PowerShell)
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
+$env:CURSOR_API_KEY = "crsr_your_key_here"
+cursorpipe-server
+```
+
+Server starts on `http://localhost:8080`.
+
+> `#subdirectory=v2` tells pip to install from the `v2/` folder of this repo.
+> v1 and v2 share the package name `cursorpipe` — install one or the other, not both.
+
+### Option 2 — Docker
+
+#### 2a — Pre-built image (fastest, no clone needed)
+
+```bash
+# bash / macOS / Linux / WSL
+docker run --rm -p 8080:8080 \
+  -e CURSOR_API_KEY=crsr_your_key_here \
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+```powershell
+# Windows (PowerShell)
+docker run --rm -p 8080:8080 `
+  -e CURSOR_API_KEY=crsr_your_key_here `
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+For multiple settings, use an env file:
+
+```bash
+cp v2/.env.example .env
+# → fill in CURSOR_API_KEY and any overrides
+
+docker run --rm -p 8080:8080 --env-file .env \
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+The image is rebuilt automatically on every push to `main`.
+
+#### 2b — Build from source
+
+```bash
+# bash / macOS / Linux / WSL
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+cp .env.example .env
+# → set CURSOR_API_KEY in .env
+docker compose up --build
+```
+
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+cp .env.example .env
+# → set CURSOR_API_KEY in .env
+docker compose up --build
+```
+
+### Option 3 — clone + uv (for development)
+
+```bash
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+
+# Windows/OneDrive: set UV_LINK_MODE=copy to avoid hardlink errors
 # $env:UV_LINK_MODE="copy"
 uv sync --extra server
 
@@ -41,29 +113,6 @@ cp .env.example .env
 # → set CURSOR_API_KEY in .env
 
 python -m cursorpipe_server
-```
-
-### Option 2 — Docker
-
-```bash
-cd v2
-cp .env.example .env
-# → set CURSOR_API_KEY in .env
-
-docker compose up --build
-```
-
-### Option 3 — pip install
-
-```bash
-# Install latest from GitHub
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git#subdirectory=v2"
-
-# Install a pinned release
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
-
-# uv equivalent
-uv add "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
 ```
 
 ---
