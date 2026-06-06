@@ -35,14 +35,14 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.1#subdirectory=v2"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.1#subdirectory=v2"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
