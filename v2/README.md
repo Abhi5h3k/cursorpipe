@@ -75,11 +75,20 @@ docker run --rm -p 8080:8080 `
 For multiple settings, use an env file — cleaner than a long chain of `-e` flags:
 
 ```bash
-# 1. Copy the example and fill in your key + any overrides
+# bash / macOS / Linux / WSL
 cp v2/.env.example .env
+# → fill in CURSOR_API_KEY and any overrides
 
-# 2. Run with the env file
 docker run --rm -p 8080:8080 --env-file .env \
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+```powershell
+# Windows (PowerShell)
+Copy-Item v2\.env.example .env
+# → fill in CURSOR_API_KEY and any overrides
+
+docker run --rm -p 8080:8080 --env-file .env `
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 
@@ -108,16 +117,24 @@ docker compose up --build
 ### Option 3 — clone + uv (for development)
 
 ```bash
+# bash / macOS / Linux / WSL
 git clone https://github.com/Abhi5h3k/cursorpipe.git
 cd cursorpipe/v2
-
-# Windows/OneDrive: set UV_LINK_MODE=copy to avoid hardlink errors
-# $env:UV_LINK_MODE="copy"
 uv sync --extra server
-
 cp .env.example .env
 # → set CURSOR_API_KEY in .env
+python -m cursorpipe_server
+```
 
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+# OneDrive: uncomment to avoid hardlink errors
+# $env:UV_LINK_MODE = "copy"
+uv sync --extra server
+Copy-Item .env.example .env
+# → set CURSOR_API_KEY in .env
 python -m cursorpipe_server
 ```
 
@@ -147,26 +164,45 @@ All settings are read from environment variables (or `.env` file).
 ### Health
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/health
 # {"status":"ok","bridge":"connected"}
-# Returns 503 if the SDK bridge is unavailable.
 ```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/health
+```
+
+Returns 503 if the SDK bridge is unavailable.
 
 ### List models
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/models
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/models
 ```
 
 ### Chat (stateless, non-streaming)
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "composer-2.5",
-    "messages": [{"role": "user", "content": "What is 2+2?"}]
-  }'
+  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"What is 2+2?"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"What is 2+2?"}]}'
 ```
 
 Response includes a `cursor_metadata` field with Cursor-specific details:
@@ -190,14 +226,19 @@ Response includes a `cursor_metadata` field with Cursor-specific details:
 ### Chat (streaming)
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -N \
-  -d '{
-    "model": "composer-2.5",
-    "stream": true,
-    "messages": [{"role": "user", "content": "Count to 5."}]
-  }'
+  -d '{"model":"composer-2.5","stream":true,"messages":[{"role":"user","content":"Count to 5."}]}'
+```
+
+```powershell
+# Windows (PowerShell) — Invoke-RestMethod buffers the full response; use curl.exe for true streaming
+curl.exe http://localhost:8080/v1/chat/completions `
+  -H "Content-Type: application/json" `
+  -N `
+  -d '{\"model\":\"composer-2.5\",\"stream\":true,\"messages\":[{\"role\":\"user\",\"content\":\"Count to 5.\"}]}'
 ```
 
 ### Stateful sessions (multi-turn)
@@ -205,35 +246,76 @@ curl http://localhost:8080/v1/chat/completions \
 Send `X-Cursor-Session-ID` to opt into stateful mode. The same agent is reused across turns.
 
 ```bash
+# bash / macOS / Linux / WSL
+
 # First turn — server creates a session and echoes the ID
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-Cursor-Session-ID: my-session-1" \
-  -d '{"model": "composer-2.5", "messages": [{"role": "user", "content": "My name is Alice."}]}'
+  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"My name is Alice."}]}'
 
 # Second turn — agent already knows Alice
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-Cursor-Session-ID: my-session-1" \
-  -d '{"model": "composer-2.5", "messages": [{"role": "user", "content": "What is my name?"}]}'
+  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"What is my name?"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+
+# First turn
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{"X-Cursor-Session-ID"="my-session-1"} `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"My name is Alice."}]}'
+
+# Second turn — agent already knows Alice
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{"X-Cursor-Session-ID"="my-session-1"} `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"What is my name?"}]}'
 ```
 
 ### Session management
 
 ```bash
+# bash / macOS / Linux / WSL
+
 # List all active sessions
 curl http://localhost:8080/v1/sessions
 
 # Get a specific session
 curl http://localhost:8080/v1/sessions/my-session-1
 
-# Explicitly create a session and get its ID
+# Explicitly create a session
 curl -X POST http://localhost:8080/v1/sessions \
   -H "Content-Type: application/json" \
-  -d '{"model": "composer-2.5"}'
+  -d '{"model":"composer-2.5"}'
 
 # Delete / close a session
 curl -X DELETE http://localhost:8080/v1/sessions/my-session-1
+```
+
+```powershell
+# Windows (PowerShell)
+
+# List all active sessions
+Invoke-RestMethod http://localhost:8080/v1/sessions
+
+# Get a specific session
+Invoke-RestMethod http://localhost:8080/v1/sessions/my-session-1
+
+# Explicitly create a session
+Invoke-RestMethod http://localhost:8080/v1/sessions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"composer-2.5"}'
+
+# Delete / close a session
+Invoke-RestMethod http://localhost:8080/v1/sessions/my-session-1 -Method Delete
 ```
 
 Session list response shape:
@@ -296,9 +378,20 @@ print(response.choices[0].message.content)
 Every response includes an `X-Request-ID` header. Provide your own to correlate logs:
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "X-Request-ID: my-trace-123" \
-  ...
+  -H "Content-Type: application/json" \
+  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{"X-Request-ID"="my-trace-123"} `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"Hello!"}]}'
 ```
 
 ---

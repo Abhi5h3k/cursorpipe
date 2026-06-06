@@ -52,12 +52,18 @@ docker compose up
 Then call it from anywhere:
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "claude-4.5-sonnet-thinking",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+  -d '{"model":"claude-4.5-sonnet-thinking","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"claude-4.5-sonnet-thinking","messages":[{"role":"user","content":"Hello!"}]}'
 ```
 
 Works out of the box with OpenAI SDK, LangChain, LiteLLM, Open WebUI, LobeChat, Vercel AI SDK, and anything that speaks the OpenAI API.
@@ -257,9 +263,18 @@ print(llm.invoke("Hello!").content)
 ### curl
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-4.5-sonnet-thinking","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"claude-4.5-sonnet-thinking","messages":[{"role":"user","content":"Hello!"}]}'
 ```
 
 ---

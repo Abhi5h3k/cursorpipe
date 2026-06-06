@@ -70,10 +70,20 @@ docker run --rm -p 8080:8080 `
 For multiple settings, use an env file:
 
 ```bash
+# bash / macOS / Linux / WSL
 cp v2/.env.example .env
 # → fill in CURSOR_API_KEY and any overrides
 
 docker run --rm -p 8080:8080 --env-file .env \
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+```powershell
+# Windows (PowerShell)
+Copy-Item v2\.env.example .env
+# → fill in CURSOR_API_KEY and any overrides
+
+docker run --rm -p 8080:8080 --env-file .env `
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 
@@ -102,16 +112,24 @@ docker compose up --build
 ### Option 3 — clone + uv (for development)
 
 ```bash
+# bash / macOS / Linux / WSL
 git clone https://github.com/Abhi5h3k/cursorpipe.git
 cd cursorpipe/v2
-
-# Windows/OneDrive: set UV_LINK_MODE=copy to avoid hardlink errors
-# $env:UV_LINK_MODE="copy"
 uv sync --extra server
-
 cp .env.example .env
 # → set CURSOR_API_KEY in .env
+python -m cursorpipe_server
+```
 
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+# OneDrive: uncomment to avoid hardlink errors
+# $env:UV_LINK_MODE = "copy"
+uv sync --extra server
+Copy-Item .env.example .env
+# → set CURSOR_API_KEY in .env
 python -m cursorpipe_server
 ```
 
@@ -120,12 +138,18 @@ python -m cursorpipe_server
 ## First request
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "composer-2.5",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
+  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"Hello!"}]}'
 ```
 
 ```python

@@ -9,7 +9,13 @@ All endpoints follow the OpenAI API specification where applicable. Unknown Open
 Health check. Always public (no auth required).
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/health
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/health
 ```
 
 **200 OK — bridge connected:**
@@ -31,7 +37,13 @@ Use this endpoint for Docker/Kubernetes health checks and readiness probes.
 List available models. Returns the configured default model if the SDK model list call fails.
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/models
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/models
 ```
 
 ```json
@@ -113,6 +125,8 @@ data: [DONE]
 Add the `X-Cursor-Session-ID` header to opt into a stateful session. The server reuses the same SDK agent so context is preserved across turns.
 
 ```bash
+# bash / macOS / Linux / WSL
+
 # First turn
 curl http://localhost:8080/v1/chat/completions \
   -H "X-Cursor-Session-ID: my-session" \
@@ -126,6 +140,24 @@ curl http://localhost:8080/v1/chat/completions \
   -d '{"model":"composer-2.5","messages":[{"role":"user","content":"What is my name?"}]}'
 ```
 
+```powershell
+# Windows (PowerShell)
+
+# First turn
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{"X-Cursor-Session-ID"="my-session"} `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"My name is Alice."}]}'
+
+# Second turn (agent remembers Alice)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{"X-Cursor-Session-ID"="my-session"} `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"What is my name?"}]}'
+```
+
 The response echoes the `X-Cursor-Session-ID` header. For stateful calls, `cursor_metadata.session_id` is also populated.
 
 ---
@@ -135,7 +167,13 @@ The response echoes the `X-Cursor-Session-ID` header. For stateful calls, `curso
 List all active stateful sessions.
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/sessions
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/sessions
 ```
 
 ```json
@@ -159,7 +197,13 @@ curl http://localhost:8080/v1/sessions
 Get info about a specific session.
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/sessions/my-session
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/sessions/my-session
 ```
 
 Returns 404 if the session does not exist or has been evicted.
@@ -171,9 +215,18 @@ Returns 404 if the session does not exist or has been evicted.
 Explicitly create a new session and return its ID. Useful when you want to pre-create a session before making chat calls.
 
 ```bash
+# bash / macOS / Linux / WSL
 curl -X POST http://localhost:8080/v1/sessions \
   -H "Content-Type: application/json" \
-  -d '{"model": "composer-2.5"}'
+  -d '{"model":"composer-2.5"}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/sessions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"model":"composer-2.5"}'
 ```
 
 ```json
@@ -192,7 +245,13 @@ curl -X POST http://localhost:8080/v1/sessions \
 Close and evict a session immediately (regardless of TTL).
 
 ```bash
+# bash / macOS / Linux / WSL
 curl -X DELETE http://localhost:8080/v1/sessions/my-session
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/sessions/my-session -Method Delete
 ```
 
 ```json
@@ -208,9 +267,20 @@ Returns 404 if the session does not exist.
 Every response includes an `X-Request-ID` header. Provide your own to correlate logs:
 
 ```bash
+# bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
   -H "X-Request-ID: my-trace-abc-123" \
-  ...
+  -H "Content-Type: application/json" \
+  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"Hello!"}]}'
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers @{"X-Request-ID"="my-trace-abc-123"} `
+  -Body '{"model":"composer-2.5","messages":[{"role":"user","content":"Hello!"}]}'
 ```
 
 The server echoes it back unchanged. If absent, a UUID is generated.
