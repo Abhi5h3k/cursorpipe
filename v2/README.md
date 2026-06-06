@@ -29,54 +29,61 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 
 ---
 
-## Installation
-
-```bash
-# pip — pinned release (recommended)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
-
-# pip — latest development (HEAD)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git#subdirectory=v2"
-
-# uv — pinned release
-uv add "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
-```
-
-The `#subdirectory=v2` tells pip/uv to install from the `v2/` folder of this repo.
-Both v1 and v2 share the package name `cursorpipe` — install one or the other, not both.
-
----
-
 ## Quick start
 
-### Option 1 — Python (with uv)
+### Option 1 — pip install (simplest)
 
 ```bash
-# Install uv if you don't have it
-pip install uv
-
-# Install cursorpipe with server extras
-# On Windows/OneDrive set UV_LINK_MODE=copy first:
-#   $env:UV_LINK_MODE="copy"
-cd v2
-uv sync --extra server
-
-# Copy and edit the env file
-cp .env.example .env
-# → set CURSOR_API_KEY in .env
-
-# Start the server
-python -m cursorpipe_server
+# bash / macOS / Linux / WSL
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
+export CURSOR_API_KEY=crsr_your_key_here
+cursorpipe-server
 ```
+
+```powershell
+# Windows (PowerShell)
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.0#subdirectory=v2"
+$env:CURSOR_API_KEY = "crsr_your_key_here"
+cursorpipe-server
+```
+
+Server starts on `http://localhost:8080`.
+
+> **Note:** `#subdirectory=v2` tells pip to install from the `v2/` folder of this repo.
+> v1 and v2 share the package name `cursorpipe` — install one or the other, not both.
 
 ### Option 2 — Docker
 
 ```bash
-cd v2
+# bash / macOS / Linux / WSL
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+export CURSOR_API_KEY=crsr_your_key_here
+docker compose up --build
+```
+
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+$env:CURSOR_API_KEY = "crsr_your_key_here"
+docker compose up --build
+```
+
+### Option 3 — clone + uv (for development)
+
+```bash
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+
+# Windows/OneDrive: set UV_LINK_MODE=copy to avoid hardlink errors
+# $env:UV_LINK_MODE="copy"
+uv sync --extra server
+
 cp .env.example .env
 # → set CURSOR_API_KEY in .env
 
-docker compose up --build
+python -m cursorpipe_server
 ```
 
 ---
