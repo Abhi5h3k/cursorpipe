@@ -52,23 +52,33 @@ Server starts on `http://localhost:8080`.
 > **Note:** `#subdirectory=v2` tells pip to install from the `v2/` folder of this repo.
 > v1 and v2 share the package name `cursorpipe` — install one or the other, not both.
 
-### Option 2 — Docker
+### Option 2 — Docker (pre-built image — no clone needed)
 
 ```bash
 # bash / macOS / Linux / WSL
+docker run --rm -p 8080:8080 -e CURSOR_API_KEY=crsr_your_key_here \
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+```powershell
+# Windows (PowerShell)
+docker run --rm -p 8080:8080 -e CURSOR_API_KEY=crsr_your_key_here `
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+The image is rebuilt automatically on every push to `main` via GitHub Actions.
+
+<details>
+<summary>Build from source instead</summary>
+
+```bash
 git clone https://github.com/Abhi5h3k/cursorpipe.git
 cd cursorpipe/v2
 export CURSOR_API_KEY=crsr_your_key_here
 docker compose up --build
 ```
 
-```powershell
-# Windows (PowerShell)
-git clone https://github.com/Abhi5h3k/cursorpipe.git
-cd cursorpipe/v2
-$env:CURSOR_API_KEY = "crsr_your_key_here"
-docker compose up --build
-```
+</details>
 
 ### Option 3 — clone + uv (for development)
 
