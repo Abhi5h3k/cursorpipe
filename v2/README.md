@@ -52,33 +52,58 @@ Server starts on `http://localhost:8080`.
 > **Note:** `#subdirectory=v2` tells pip to install from the `v2/` folder of this repo.
 > v1 and v2 share the package name `cursorpipe` — install one or the other, not both.
 
-### Option 2 — Docker (pre-built image — no clone needed)
+### Option 2 — Docker
+
+#### 2a — Pre-built image (fastest, no clone needed)
+
+Pull the image that is automatically built on every push to `main`:
 
 ```bash
-# bash / macOS / Linux / WSL
-docker run --rm -p 8080:8080 -e CURSOR_API_KEY=crsr_your_key_here \
+# bash / macOS / Linux / WSL — pass a single env var
+docker run --rm -p 8080:8080 \
+  -e CURSOR_API_KEY=crsr_your_key_here \
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 
 ```powershell
 # Windows (PowerShell)
-docker run --rm -p 8080:8080 -e CURSOR_API_KEY=crsr_your_key_here `
+docker run --rm -p 8080:8080 `
+  -e CURSOR_API_KEY=crsr_your_key_here `
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 
-The image is rebuilt automatically on every push to `main` via GitHub Actions.
-
-<details>
-<summary>Build from source instead</summary>
+For multiple settings, use an env file — cleaner than a long chain of `-e` flags:
 
 ```bash
+# 1. Copy the example and fill in your key + any overrides
+cp v2/.env.example .env
+
+# 2. Run with the env file
+docker run --rm -p 8080:8080 --env-file .env \
+  ghcr.io/abhi5h3k/cursorpipe:latest
+```
+
+See the [Configuration](#configuration) table for all available env vars.
+
+#### 2b — Build from source
+
+```bash
+# bash / macOS / Linux / WSL
 git clone https://github.com/Abhi5h3k/cursorpipe.git
 cd cursorpipe/v2
-export CURSOR_API_KEY=crsr_your_key_here
+cp .env.example .env
+# → set CURSOR_API_KEY (and any other vars) in .env
 docker compose up --build
 ```
 
-</details>
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/Abhi5h3k/cursorpipe.git
+cd cursorpipe/v2
+cp .env.example .env
+# → set CURSOR_API_KEY (and any other vars) in .env
+docker compose up --build
+```
 
 ### Option 3 — clone + uv (for development)
 
