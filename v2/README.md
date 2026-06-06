@@ -22,6 +22,8 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 - **Structured logging** — configurable log level via env var
 - **Docker** — one command to run anywhere
 
+<img width="2752" height="1536" alt="cursorpipe v2 Architecture" src="https://github.com/user-attachments/assets/d695b118-998a-4120-9374-809bda663b54" />
+
 ---
 
 ## Installation

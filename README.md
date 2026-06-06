@@ -6,7 +6,7 @@
 
 > **Two versions available:**
 > - **[v2 (recommended)](v2/README.md)** — SDK-based, requires `CURSOR_API_KEY`, adds stateful sessions, thinking support, and CORS
-> - **v1 (legacy)** — CLI-based, works with `agent login` (no API key needed) — you are reading it
+> - **v1 (this page)** — CLI-based, works with `CURSOR_API_KEY` **or** `agent login` (no key needed if you have a Cursor IDE session)
 
 **Async Python client and OpenAI-compatible HTTP server for the Cursor Agent CLI** — pipe prompts to frontier LLMs via [ACP (Agent Client Protocol)](https://cursor.com/docs/cli/acp) with persistent sessions, streaming, and per-call model selection.
 

@@ -11,7 +11,7 @@ Point any OpenAI-compatible client at `http://localhost:8080` and use Cursor's f
 | | v1 (CLI-based) | v2 (SDK-based) |
 |---|---|---|
 | Backend | Cursor Agent CLI subprocess | Official `cursor-sdk` Python library |
-| Auth | `agent login` session (no key needed) | `CURSOR_API_KEY` required |
+| Auth | `CURSOR_API_KEY` **or** `agent login` (no key needed) | `CURSOR_API_KEY` required |
 | Stateful sessions | No | Yes (`X-Cursor-Session-ID`) |
 | Thinking/reasoning | No | Yes (opt-in) |
 | CORS | No | Yes |
@@ -21,6 +21,8 @@ Point any OpenAI-compatible client at `http://localhost:8080` and use Cursor's f
 **Use v1** if you have a Cursor IDE login but no API key (common in corporate environments where an admin controls access).
 
 **Use v2** if you have a Cursor API key and want stateful sessions, thinking support, and a production-ready server.
+
+<img width="2752" height="1536" alt="cursorpipe v2 Architecture" src="https://github.com/user-attachments/assets/d695b118-998a-4120-9374-809bda663b54" />
 
 ---
 
