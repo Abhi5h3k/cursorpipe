@@ -1,7 +1,12 @@
 # cursorpipe v2
 
-<img width="2752" height="1536" alt="cursorpipe v2" src="https://github.com/user-attachments/assets/34f432f4-5c21-4d65-9e45-c80f7a1d7b9c" />
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](../LICENSE)
+[![cursor-sdk](https://img.shields.io/badge/cursor--sdk-0.1.7-purple.svg)](https://cursor.com/docs/sdk/python)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg)](https://fastapi.tiangolo.com)
+[![OpenAI compatible](https://img.shields.io/badge/OpenAI-compatible-412991.svg)](https://platform.openai.com/docs/api-reference/chat)
 
+<img width="2752" height="1536" alt="cursorpipe v2" src="https://github.com/user-attachments/assets/34f432f4-5c21-4d65-9e45-c80f7a1d7b9c" />
 
 An OpenAI-compatible HTTP server powered by the official [Cursor Python SDK](https://cursor.com/docs/sdk/python).
 
