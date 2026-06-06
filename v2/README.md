@@ -1,4 +1,4 @@
-# cursorpipe v2
+﻿# cursorpipe v2
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](../LICENSE)
@@ -146,7 +146,7 @@ All settings are read from environment variables (or `.env` file).
 
 | Variable | Default | Description |
 |---|---|---|
-| `CURSOR_API_KEY` | *(required)* | Cursor API key from [cursor.com/settings](https://cursor.com/settings) |
+| `CURSOR_API_KEY` | *(required)* | Cursor API key from [cursor.com/settings](https://cursor.com/settings). `CURSORPIPE_API_KEY` is also accepted (v1 compatibility). |
 | `CURSORPIPE_HOST` | `0.0.0.0` | Bind address |
 | `CURSORPIPE_PORT` | `8080` | Listen port |
 | `CURSORPIPE_BEARER_TOKEN` | *(empty)* | Protect the API. Empty = no auth |

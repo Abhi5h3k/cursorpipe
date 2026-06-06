@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,8 +12,13 @@ class Settings(BaseSettings):
     )
 
     # ── Cursor auth ────────────────────────────────────────────────────────────
-    # Read without prefix so it matches CURSOR_API_KEY used by the SDK itself.
-    cursor_api_key: str = Field(default="", alias="CURSOR_API_KEY")
+    # CURSOR_API_KEY is primary (matches the SDK's own env var name).
+    # CURSORPIPE_API_KEY is accepted as an alias for consistency with v1,
+    # so users can reuse a v1 .env file without changes.
+    cursor_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("CURSOR_API_KEY", "CURSORPIPE_API_KEY"),
+    )
 
     # ── Server ─────────────────────────────────────────────────────────────────
     host: str = Field(default="0.0.0.0")

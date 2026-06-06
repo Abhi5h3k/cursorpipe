@@ -1,4 +1,4 @@
-# Configuration
+﻿# Configuration
 
 All settings are read from environment variables or a `.env` file in the `v2/` directory.
 Copy `.env.example` to `.env` and edit it before starting the server.
@@ -9,7 +9,7 @@ Copy `.env.example` to `.env` and edit it before starting the server.
 
 | Variable | Description |
 |---|---|
-| `CURSOR_API_KEY` | Cursor API key. Generate at [cursor.com/settings](https://cursor.com/settings) → API Keys. |
+| `CURSOR_API_KEY` | Cursor API key. Generate at [cursor.com/settings](https://cursor.com/settings) → API Keys. `CURSORPIPE_API_KEY` is also accepted (v1 compatibility — both names work). |
 
 ---
 
@@ -87,6 +87,6 @@ CURSORPIPE_LOG_LEVEL=info
 
 ## Notes
 
-- `CURSOR_API_KEY` is read without the `CURSORPIPE_` prefix so it matches the environment variable the Cursor SDK itself expects.
+- Both `CURSOR_API_KEY` and `CURSORPIPE_API_KEY` are accepted for the API key. `CURSOR_API_KEY` is preferred — it matches the name the Cursor SDK itself uses. `CURSORPIPE_API_KEY` is supported for compatibility with v1.
 - The server refuses to start if `CURSOR_API_KEY` is not set — it will print a clear error with a link to generate a key.
 - When `CURSORPIPE_BEARER_TOKEN` is set, every request to `/v1/*` must include `Authorization: Bearer <token>`. The `/health` endpoint is always public.
