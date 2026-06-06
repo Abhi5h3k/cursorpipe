@@ -1,4 +1,4 @@
-﻿# Configuration
+# Configuration
 
 All settings are read from environment variables or a `.env` file in the `v2/` directory.
 Copy `.env.example` to `.env` and edit it before starting the server.
