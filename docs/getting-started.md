@@ -113,7 +113,7 @@ Pick one:
     === "bash / macOS / Linux / WSL"
 
         ```bash
-        pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+        pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
         export CURSOR_API_KEY=crsr_your_key_here
         cursorpipe-server
         ```
@@ -121,7 +121,7 @@ Pick one:
     === "PowerShell (Windows)"
 
         ```powershell
-        pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+        pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
         $env:CURSOR_API_KEY = "crsr_your_key_here"
         cursorpipe-server
         ```
@@ -135,13 +135,13 @@ Pick one:
     === "pip"
 
         ```bash
-        pip install git+https://github.com/Abhi5h3k/cursorpipe.git
+        pip install "cursorpipe @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
         ```
 
     === "uv"
 
         ```bash
-        uv pip install git+https://github.com/Abhi5h3k/cursorpipe.git
+        uv pip install "cursorpipe @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
         ```
 
     === "From source"
@@ -206,7 +206,7 @@ async def main():
 Install the `fast` extra for ~4.6x faster JSON serialization (uses Rust-backed `orjson`):
 
 ```bash
-pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
 ```
 
 That's it! Check out the [Examples](examples.md) page for streaming, sessions, framework integration, and more. Or jump to [HTTP Server](server.md) / [Docker](docker.md) if you want the language-agnostic API.

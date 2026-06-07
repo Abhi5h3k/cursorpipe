@@ -20,7 +20,7 @@ Setting CURSORPIPE_STRATEGY=acp in your environment would bypass this
 routing entirely and the model names below would be ignored.
 
 Tested with:
-  - cursorpipe 0.1.1
+  - cursorpipe 0.1.2
   - Cursor Agent CLI v2026.03.25-933d5a6
   - Python 3.14
 

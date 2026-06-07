@@ -5,7 +5,7 @@ in real time while the server keeps full conversation history.  The second
 turn proves memory works even after a streamed response.
 
 Tested with:
-  - cursorpipe 0.1.0
+  - cursorpipe 0.1.2
   - Cursor Agent CLI v2026.03.25-933d5a6
   - Python 3.14
 

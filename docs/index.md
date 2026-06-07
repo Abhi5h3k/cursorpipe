@@ -29,7 +29,7 @@ Turn your Cursor subscription into a self-hosted LLM API with one command. Works
 ### HTTP Server — standalone
 
 ```bash
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
 cursorpipe-server
 ```
 

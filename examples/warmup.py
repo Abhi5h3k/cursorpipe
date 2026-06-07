@@ -13,7 +13,7 @@ With warmup:
   First request   ~5s  (LLM only — same as subsequent)
 
 Tested with:
-  - cursorpipe 0.1.0
+  - cursorpipe 0.1.2
   - Cursor Agent CLI v2026.03.25-933d5a6
   - Python 3.14
 

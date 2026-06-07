@@ -4,7 +4,7 @@ The simplest way to get a response from an LLM through cursorpipe.
 Creates a client, sends one prompt, prints the response, and exits.
 
 Tested with:
-  - cursorpipe 0.1.0
+  - cursorpipe 0.1.2
   - Cursor Agent CLI v2026.03.25-933d5a6
   - Python 3.14
 
