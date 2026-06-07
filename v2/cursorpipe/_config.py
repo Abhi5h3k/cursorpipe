@@ -54,19 +54,23 @@ class Settings(BaseSettings):
     # CURSORPIPE_EXPOSE_THINKING=false (or unset) leaves thinking_level unchanged.
     thinking_level: str = Field(default="off")
 
-    # Internal: read legacy CURSORPIPE_EXPOSE_THINKING and upgrade to thinking_level.
-    # Not exposed as a public field — use thinking_level directly.
-    _expose_thinking_compat: bool = Field(default=False, exclude=True)
-
     @model_validator(mode="before")
     @classmethod
     def _upgrade_expose_thinking(cls, values: dict) -> dict:
-        """Convert legacy CURSORPIPE_EXPOSE_THINKING=true → thinking_level=high."""
-        expose = values.get("CURSORPIPE_EXPOSE_THINKING") or values.get("expose_thinking")
-        if expose in (True, "true", "1", "yes") and not values.get(
-            "CURSORPIPE_THINKING_LEVEL"
-        ) and not values.get("thinking_level"):
-            values["thinking_level"] = "high"
+        """Convert legacy CURSORPIPE_EXPOSE_THINKING=true → thinking_level=high.
+
+        pydantic-settings drops unknown env vars before this validator runs, so
+        we read CURSORPIPE_EXPOSE_THINKING directly from os.environ. The env
+        var set via monkeypatch.setenv() is visible there too.
+        """
+        import os
+
+        expose = os.environ.get("CURSORPIPE_EXPOSE_THINKING", "").lower()
+        if expose in ("true", "1", "yes"):
+            # Only upgrade if thinking_level is not explicitly provided
+            existing = values.get("CURSORPIPE_THINKING_LEVEL") or values.get("thinking_level") or ""
+            if not existing or existing == "off":
+                values["thinking_level"] = "high"
         return values
 
     # ── Logging ────────────────────────────────────────────────────────────────

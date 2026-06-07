@@ -89,6 +89,185 @@ class TestConfig:
 
 
 # =========================================================================
+# Thinking / thinking_level config
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestThinkingConfig:
+    """Tests for CURSORPIPE_THINKING_LEVEL and backward-compat EXPOSE_THINKING."""
+
+    def _settings(self, monkeypatch: pytest.MonkeyPatch, **env: str):
+        """Helper: clear thinking-related env vars then set the provided ones."""
+        from cursorpipe._config import Settings
+
+        monkeypatch.delenv("CURSORPIPE_THINKING_LEVEL", raising=False)
+        monkeypatch.delenv("CURSORPIPE_EXPOSE_THINKING", raising=False)
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        return Settings(_env_file=None)
+
+    def test_default_is_off(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        s = self._settings(monkeypatch)
+        assert s.thinking_level == "off"
+        assert s.thinking_param is None
+
+    def test_low_level(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        s = self._settings(monkeypatch, CURSORPIPE_THINKING_LEVEL="low")
+        assert s.thinking_level == "low"
+        assert s.thinking_param == "low"
+
+    def test_high_level(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        s = self._settings(monkeypatch, CURSORPIPE_THINKING_LEVEL="high")
+        assert s.thinking_level == "high"
+        assert s.thinking_param == "high"
+
+    def test_off_level_returns_none_param(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        s = self._settings(monkeypatch, CURSORPIPE_THINKING_LEVEL="off")
+        assert s.thinking_param is None
+
+    def test_legacy_expose_thinking_true_maps_to_high(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """CURSORPIPE_EXPOSE_THINKING=true must upgrade thinking_level to 'high'."""
+        s = self._settings(monkeypatch, CURSORPIPE_EXPOSE_THINKING="true")
+        assert s.thinking_level == "high"
+        assert s.thinking_param == "high"
+
+    def test_legacy_expose_thinking_false_leaves_off(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        s = self._settings(monkeypatch, CURSORPIPE_EXPOSE_THINKING="false")
+        assert s.thinking_level == "off"
+        assert s.thinking_param is None
+
+    def test_thinking_level_wins_over_expose_thinking(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Explicit CURSORPIPE_THINKING_LEVEL takes precedence over old EXPOSE_THINKING."""
+        s = self._settings(
+            monkeypatch,
+            CURSORPIPE_THINKING_LEVEL="low",
+            CURSORPIPE_EXPOSE_THINKING="true",
+        )
+        assert s.thinking_level == "low"
+        assert s.thinking_param == "low"
+
+
+# =========================================================================
+# _agent_options — ModelSelection with thinking param
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestAgentOptions:
+    """Tests that _agent_options() builds the correct AgentOptions payload."""
+
+    def test_no_thinking_uses_plain_model_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("CURSORPIPE_THINKING_LEVEL", raising=False)
+        monkeypatch.delenv("CURSORPIPE_EXPOSE_THINKING", raising=False)
+
+        # Re-import after env change so settings is fresh
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        opts = client_mod._agent_options("composer-2.5")
+        # model should be plain string, not a ModelSelection
+        from cursor_sdk import ModelSelection
+        assert not isinstance(opts.model, ModelSelection), (
+            "Expected plain string model when thinking is off"
+        )
+        assert opts.model == "composer-2.5"
+
+    def test_thinking_high_uses_model_selection(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CURSORPIPE_THINKING_LEVEL", "high")
+        monkeypatch.delenv("CURSORPIPE_EXPOSE_THINKING", raising=False)
+
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        opts = client_mod._agent_options("composer-2.5")
+        from cursor_sdk import ModelSelection, ModelParameterValue
+        assert isinstance(opts.model, ModelSelection), (
+            "Expected ModelSelection when thinking_level=high"
+        )
+        assert opts.model.id == "composer-2.5"
+        params = {p.id: p.value for p in opts.model.params}
+        assert params.get("thinking") == "high"
+
+    def test_thinking_low_uses_model_selection(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CURSORPIPE_THINKING_LEVEL", "low")
+        monkeypatch.delenv("CURSORPIPE_EXPOSE_THINKING", raising=False)
+
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        opts = client_mod._agent_options("composer-2.5")
+        from cursor_sdk import ModelSelection
+        assert isinstance(opts.model, ModelSelection)
+        params = {p.id: p.value for p in opts.model.params}
+        assert params.get("thinking") == "low"
+
+
+# =========================================================================
+# ModelCard cursor_parameters schema
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestModelCardSchema:
+    """Tests for the cursor_parameters extension field on ModelCard."""
+
+    def test_model_card_without_params(self) -> None:
+        from cursorpipe_server.schemas import ModelCard
+
+        card = ModelCard(id="composer-2.5")
+        assert card.cursor_parameters == []
+
+    def test_model_card_with_thinking_param(self) -> None:
+        from cursorpipe_server.schemas import ModelCard, ModelParamDef, ModelParamValueDef
+
+        card = ModelCard(
+            id="composer-2.5",
+            cursor_parameters=[
+                ModelParamDef(
+                    id="thinking",
+                    display_name="Thinking",
+                    values=[
+                        ModelParamValueDef(value="low", display_name="Low"),
+                        ModelParamValueDef(value="high", display_name="High"),
+                    ],
+                )
+            ],
+        )
+        assert len(card.cursor_parameters) == 1
+        param = card.cursor_parameters[0]
+        assert param.id == "thinking"
+        assert len(param.values) == 2
+        assert param.values[0].value == "low"
+        assert param.values[1].value == "high"
+
+    def test_model_card_serializes_cursor_parameters(self) -> None:
+        from cursorpipe_server.schemas import ModelCard, ModelParamDef, ModelParamValueDef
+
+        card = ModelCard(
+            id="composer-2.5",
+            cursor_parameters=[
+                ModelParamDef(
+                    id="thinking",
+                    values=[ModelParamValueDef(value="high", display_name="High")],
+                )
+            ],
+        )
+        data = card.model_dump()
+        assert "cursor_parameters" in data
+        assert data["cursor_parameters"][0]["id"] == "thinking"
+
+
+# =========================================================================
 # _flatten_messages
 # =========================================================================
 

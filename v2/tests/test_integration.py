@@ -252,3 +252,140 @@ class TestIntegrationModels:
         assert response.status_code == 200
         body = response.json()
         assert len(body["data"]) >= 1
+
+    async def test_models_have_cursor_parameters_field(self) -> None:
+        """Every model card must include cursor_parameters (may be empty list)."""
+        async with _real_app_client() as client:
+            response = await client.get("/v1/models", timeout=30)
+        body = response.json()
+        for m in body["data"]:
+            assert "cursor_parameters" in m, (
+                f"Model {m.get('id')} missing cursor_parameters field"
+            )
+            assert isinstance(m["cursor_parameters"], list)
+
+    async def test_thinking_capable_models_expose_param(self) -> None:
+        """Models that support thinking should have a 'thinking' entry in cursor_parameters."""
+        async with _real_app_client() as client:
+            response = await client.get("/v1/models", timeout=30)
+        body = response.json()
+        thinking_models = [
+            m for m in body["data"]
+            if any(p["id"] == "thinking" for p in m.get("cursor_parameters", []))
+        ]
+        # Not asserting a minimum count — accounts differ. Just verify structure if any exist.
+        for m in thinking_models:
+            param = next(p for p in m["cursor_parameters"] if p["id"] == "thinking")
+            assert "values" in param
+            assert isinstance(param["values"], list)
+            assert all("value" in v for v in param["values"])
+
+
+# ---------------------------------------------------------------------------
+# Thinking (real SDK, requires thinking-capable model)
+# ---------------------------------------------------------------------------
+
+# Models known to support thinking. Discover dynamically via /v1/models in example;
+# for integration tests we fall back to a reasonable default.
+THINKING_TEST_MODEL = os.getenv("CURSORPIPE_THINKING_TEST_MODEL", "composer-2.5")
+
+skip_no_thinking_model = pytest.mark.skipif(
+    not os.getenv("CURSOR_API_KEY"),
+    reason="CURSOR_API_KEY not set — skipping thinking integration tests",
+)
+
+
+@pytest.mark.integration
+@skip_no_api_key
+class TestIntegrationThinking:
+    """Tests for CURSORPIPE_THINKING_LEVEL=high integration.
+
+    These tests run against the real SDK to verify that:
+    - The server correctly requests thinking via ModelParameterValue
+    - Thinking content surfaces in cursor_metadata (non-streaming)
+    - Thinking content surfaces as reasoning_content deltas (streaming)
+
+    Note: whether the model actually returns thinking tokens depends on the
+    account's allowed models. Tests verify structure, not the presence of
+    thinking text, since some accounts may not have thinking-capable models.
+    """
+
+    async def test_non_streaming_with_thinking_level_high(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Response structure is valid when thinking_level=high is set."""
+        monkeypatch.setenv("CURSORPIPE_THINKING_LEVEL", "high")
+
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        async with _real_app_client() as client:
+            response = await client.post(
+                "/v1/chat/completions",
+                json={
+                    "model": THINKING_TEST_MODEL,
+                    "messages": [
+                        {"role": "user", "content": "What is 12 + 34? Just give the number."}
+                    ],
+                },
+                timeout=120,
+            )
+        assert response.status_code == 200
+        body = response.json()
+        # Content must still be present and non-empty
+        content = body["choices"][0]["message"]["content"]
+        assert isinstance(content, str)
+        assert len(content) > 0
+        # cursor_metadata must be present
+        meta = body.get("cursor_metadata", {})
+        assert "duration_ms" in meta
+        # thinking_duration_ms is present (may be 0 if model didn't think)
+        assert "thinking_duration_ms" in meta
+
+    async def test_streaming_with_thinking_level_high_valid_sse(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Streaming with thinking_level=high produces valid SSE with no malformed chunks."""
+        monkeypatch.setenv("CURSORPIPE_THINKING_LEVEL", "high")
+
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        async with _real_app_client() as client:
+            response = await client.post(
+                "/v1/chat/completions",
+                json={
+                    "model": THINKING_TEST_MODEL,
+                    "stream": True,
+                    "messages": [
+                        {"role": "user", "content": "What is 5 × 6? Just give the number."}
+                    ],
+                },
+                timeout=120,
+            )
+        assert response.status_code == 200
+        assert "[DONE]" in response.text
+
+        full_content = ""
+        has_reasoning = False
+        for raw_line in response.text.splitlines():
+            if not raw_line.startswith("data:"):
+                continue
+            payload = raw_line.removeprefix("data:").strip()
+            if payload == "[DONE]":
+                break
+            chunk = json.loads(payload)
+            delta = chunk["choices"][0]["delta"]
+            if delta.get("reasoning_content"):
+                has_reasoning = True
+            full_content += delta.get("content", "")
+
+        assert len(full_content) > 0, "No content received in streaming response"
+        # has_reasoning may be False if model didn't produce thinking tokens — that's ok
+        # The test ensures no crash, valid JSON, and that content arrived
