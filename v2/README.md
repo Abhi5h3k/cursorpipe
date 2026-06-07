@@ -190,6 +190,10 @@ Invoke-RestMethod http://localhost:8080/v1/models
 
 ### Chat (stateless, non-streaming)
 
+<img width="1663" height="837" alt="v2 API call" src="https://github.com/user-attachments/assets/d6080d16-9329-4143-9172-e0845642aac0" />
+
+
+
 ```bash
 # bash / macOS / Linux / WSL
 curl http://localhost:8080/v1/chat/completions \
