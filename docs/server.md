@@ -122,6 +122,16 @@ OpenAI-compatible chat completions.
 !!! note "Token counts"
     Cursor does not report token usage, so `usage` fields are always zero.
 
+!!! info "Model field and transport routing"
+    The `model` field controls which Cursor model is used, but the behaviour depends on `CURSORPIPE_STRATEGY`:
+
+    | `model` value | Strategy=`auto` (default) | Strategy=`acp` | Strategy=`subprocess` |
+    |---------------|--------------------------|----------------|-----------------------|
+    | `"auto"` or omitted | ACP (~50ms, Cursor picks model) | ACP (Cursor picks model) | subprocess (Cursor picks model) |
+    | Specific name e.g. `"claude-4.5-sonnet-thinking"` | **subprocess** (`--model` passed) | ACP (model name **ignored**) | subprocess (`--model` passed) |
+
+    With the default `auto` strategy, passing a specific model name automatically routes the request through subprocess so `--model` is correctly forwarded to the CLI. Passing `"auto"` keeps the request on the warm ACP session for lower latency.
+
 **Streaming** — set `"stream": true`. The server responds with `text/event-stream` (Server-Sent Events):
 
 ```

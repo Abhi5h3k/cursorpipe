@@ -68,7 +68,8 @@ pytest tests/test_integration.py -v -m integration
 | Subprocess streaming | Streaming via subprocess transport |
 | ACP generate | Single-call via persistent ACP transport |
 | ACP streaming | Streaming via ACP transport |
-| ACP model switching | Switching models between calls |
+| ACP consecutive calls | Two consecutive ACP calls succeed (ACP uses Cursor's auto-selected model; it cannot switch models per-call) |
+| AUTO specific-model routing | Specific model name routes to subprocess; `"auto"` stays on ACP |
 | ACP multi-turn session | Session memory across turns |
 | ACP session streaming | `session.stream_prompt()` yields chunks |
 | Model discovery | `list_models()` returns available models |

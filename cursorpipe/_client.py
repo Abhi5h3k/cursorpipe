@@ -78,12 +78,16 @@ class CursorClient:
             self._subprocess = SubprocessTransport(self._config)
         return self._subprocess
 
-    def _should_use_acp(self) -> bool:
+    def _should_use_acp(self, model: str = "") -> bool:
         if self._config.strategy == Strategy.ACP:
             return True
         if self._config.strategy == Strategy.SUBPROCESS:
             return False
-        return True  # AUTO defaults to ACP
+        # AUTO: route to subprocess when a specific model is requested so that
+        # --model is passed correctly. ACP cannot switch models per-request
+        # (known Cursor CLI limitation). Unspecified / "auto" stays on ACP
+        # for the warm session pool benefit.
+        return model.lower().strip() in {"auto", ""}
 
     # ------------------------------------------------------------------
     # Warmup
@@ -136,9 +140,9 @@ class CursorClient:
         full_prompt = f"{system}\n\n{prompt}".strip() if system else prompt
 
         self._active_requests += 1
+        acp_error: CursorPipeError | None = None
         try:
-            if self._should_use_acp():
-                acp_error: CursorPipeError | None = None
+            if self._should_use_acp(model):
                 try:
                     result = await self._get_acp().prompt(
                         model, full_prompt, timeout_s=timeout_s,
@@ -196,9 +200,9 @@ class CursorClient:
         full_prompt = f"{system}\n\n{prompt}".strip() if system else prompt
 
         self._active_requests += 1
+        acp_error: CursorPipeError | None = None
         try:
-            if self._should_use_acp():
-                acp_error: CursorPipeError | None = None
+            if self._should_use_acp(model):
                 try:
                     async for chunk in self._get_acp().prompt_stream(
                         model, full_prompt, timeout_s=timeout_s,

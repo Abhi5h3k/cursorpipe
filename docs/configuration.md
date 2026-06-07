@@ -66,13 +66,25 @@ Applies to both the server and direct Python library usage.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp` (persistent process), `subprocess` (per-request spawn), `auto` (try ACP first) |
+| `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp` (persistent process, model auto-selected by Cursor), `subprocess` (per-request spawn, `--model` passed correctly), `auto` (smart routing — see note below) |
 | `CURSORPIPE_DEFAULT_MODE` | `ask` | Agent mode: `ask` (pure LLM, no tools), `agent` (full tools), `plan` |
 | `CURSORPIPE_REQUEST_TIMEOUT_S` | `300` | Per-request timeout in seconds |
 | `CURSORPIPE_ACP_STARTUP_TIMEOUT_S` | `30` | Max seconds to wait for the ACP process to initialise |
 | `CURSORPIPE_ACP_MAX_RESTARTS` | `3` | How many times to auto-restart a crashed ACP process before giving up |
 | `CURSORPIPE_WORKSPACE` | `""` | Working directory passed to the agent. Empty = current directory at call time |
 | `CURSORPIPE_ENABLE_PROFILING` | `false` | Log timing diagnostics: TTFC, per-chunk inter-arrival, session acquire latency |
+
+!!! note "CURSORPIPE_STRATEGY=auto model routing"
+    In `auto` mode, the transport is chosen per-request based on the `model` value you pass:
+
+    | model value | transport | effect |
+    |-------------|-----------|--------|
+    | `"auto"` or empty | ACP | ~50ms overhead; Cursor picks the best available model |
+    | specific name (e.g. `"claude-4.5-sonnet-thinking"`) | subprocess | `--model` is passed to the CLI; exact model is honoured |
+
+    **Why?** ACP is started once without `--model` and cannot switch models mid-session. Subprocess spawns `agent --print --model <name>` fresh per call, so it reliably uses the requested model.
+
+    If ACP is forced (`CURSORPIPE_STRATEGY=acp`), the `model` field in requests is ignored — Cursor always auto-selects.
 
 ---
 

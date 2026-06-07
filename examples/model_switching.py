@@ -5,8 +5,22 @@ client.  This is useful when you want a fast/cheap model for simple tasks
 (classification, extraction) and a powerful model for complex tasks
 (code generation, analysis).
 
+Transport routing note
+----------------------
+CursorClient() defaults to CURSORPIPE_STRATEGY=auto.  In auto mode, any
+call with a specific model name (not "auto" or empty) is automatically
+routed through the subprocess transport, which spawns `agent --print
+--model <name>` so the exact model is honoured by the CLI.
+
+Passing model="auto" (or omitting it) would use the ACP transport instead,
+where Cursor auto-selects the best available model — but model switching
+per-call is not possible over ACP.
+
+Setting CURSORPIPE_STRATEGY=acp in your environment would bypass this
+routing entirely and the model names below would be ignored.
+
 Tested with:
-  - cursorpipe 0.1.0
+  - cursorpipe 0.1.1
   - Cursor Agent CLI v2026.03.25-933d5a6
   - Python 3.14
 

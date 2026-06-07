@@ -117,8 +117,14 @@ class TestAcpGenerate:
         assert "PING" in result.upper(), f"Expected PING in response, got: {result}"
         await acp_client.close()
 
-    async def test_model_switching(self, acp_client: CursorClient) -> None:
-        """Two consecutive calls should both return responses (sessions work)."""
+    async def test_consecutive_calls(self, acp_client: CursorClient) -> None:
+        """Two consecutive ACP calls should both return responses.
+
+        Note: ACP does NOT switch models per-call. The ACP process is started
+        without --model, so Cursor auto-selects the model for every request
+        regardless of the model argument. This test verifies that consecutive
+        calls work correctly, not that a specific model is used.
+        """
         r1 = await acp_client.generate(
             model=TEST_MODEL,
             prompt="Reply with the single word: ALPHA",
@@ -217,6 +223,48 @@ class TestAutoFallback:
             prompt="Reply with the single word: PING",
         )
         assert len(result) > 0
+        await client.close()
+
+
+@pytest.mark.integration
+@skip_no_agent
+@skip_no_auth
+class TestAutoModelRouting:
+    """Test AUTO strategy model-aware transport routing.
+
+    In AUTO mode, requests with a specific model name are routed through
+    subprocess (so --model is passed correctly to the CLI). Requests with
+    model="auto" stay on ACP for the warm-session benefit.
+    """
+
+    async def test_specific_model_uses_subprocess(self) -> None:
+        """A specific model name should trigger subprocess transport in AUTO mode."""
+        specific_model = os.getenv("CURSORPIPE_TEST_MODEL", "claude-4.5-sonnet-thinking")
+        if specific_model == "auto":
+            specific_model = "claude-4.5-sonnet-thinking"
+
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.AUTO, request_timeout_s=60))
+        result = await client.generate(
+            model=specific_model,
+            prompt="Reply with the single word: SUBPROCESS",
+        )
+        assert len(result) > 0, "Expected a non-empty response"
+        assert client._subprocess is not None, (
+            "AUTO strategy with a specific model should have used the subprocess transport"
+        )
+        await client.close()
+
+    async def test_auto_model_uses_acp(self) -> None:
+        """model='auto' should keep the request on the ACP transport in AUTO mode."""
+        client = CursorClient(CursorPipeConfig(strategy=Strategy.AUTO, request_timeout_s=60))
+        result = await client.generate(
+            model="auto",
+            prompt="Reply with the single word: ACP",
+        )
+        assert len(result) > 0, "Expected a non-empty response"
+        assert client._acp is not None, (
+            "AUTO strategy with model='auto' should have used the ACP transport"
+        )
         await client.close()
 
 

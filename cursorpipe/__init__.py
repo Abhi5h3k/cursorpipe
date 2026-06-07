@@ -71,7 +71,7 @@ __all__ = [
     "close",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # ---------------------------------------------------------------------------
 # Module-level convenience functions (lazy singleton)

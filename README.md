@@ -291,6 +291,9 @@ await client.warmup(pool_size=5)
 ### Per-call model selection
 
 ```python
+# With the default AUTO strategy, each call with a specific model name is
+# automatically routed through subprocess, which passes --model to the CLI.
+# Using model="auto" keeps the request on the warm ACP session instead.
 intent = await client.generate(model="gpt-5.4-mini-medium", prompt="Classify: 'top 10 users'")
 sql = await client.generate(model="claude-4.5-sonnet-thinking", prompt="Generate SQL for: top 10 users")
 ```
@@ -346,7 +349,7 @@ All settings load from environment variables (prefix `CURSORPIPE_`) or a `.env` 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CURSORPIPE_AGENT_BIN` | `agent` | Path to the agent binary |
-| `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp`, `subprocess`, `auto` |
+| `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp` (persistent, Cursor auto-selects model), `subprocess` (per-call, `--model` passed), `auto` (smart: specific model → subprocess, `"auto"` → ACP) |
 | `CURSORPIPE_DEFAULT_MODE` | `ask` | ACP mode: `ask`, `agent`, `plan` |
 | `CURSORPIPE_REQUEST_TIMEOUT_S` | `300` | Per-request timeout in seconds |
 | `CURSORPIPE_ACP_STARTUP_TIMEOUT_S` | `30` | Max seconds for ACP startup |

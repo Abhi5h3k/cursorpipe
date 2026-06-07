@@ -101,7 +101,18 @@ Spawns a fresh `agent --print` process per request. Simpler but slower.
 
 ### Auto (default)
 
-Tries ACP first. If ACP fails (crash, timeout, etc.), falls back to subprocess transparently. Best of both worlds.
+The default strategy. Routes each request to the best transport based on the `model` argument:
+
+| `model` value | Transport used | Reason |
+|---------------|----------------|--------|
+| `"auto"` or `""` (unspecified) | ACP | Warm session, ~50ms overhead, Cursor picks best model |
+| Specific name (e.g. `"claude-4.5-sonnet-thinking"`) | Subprocess | Only subprocess can pass `--model` correctly |
+
+**Why the split?** The ACP process is started once at init time without a `--model` flag. There is no per-request mechanism in ACP to switch models — Cursor always auto-selects inside the persistent process. Subprocess spawns a fresh `agent --print --model <name>` per call, so it reliably honours the requested model.
+
+**Fallback**: If ACP fails (crash, timeout) during an `"auto"` request, AUTO transparently retries via subprocess.
+
+> **Note:** Setting `CURSORPIPE_STRATEGY=acp` bypasses all model-aware routing. Every request goes through ACP regardless of the `model` field, and Cursor auto-selects the model.
 
 ## Session dispenser
 
