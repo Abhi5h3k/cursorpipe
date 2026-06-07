@@ -193,7 +193,7 @@ config = CursorPipeConfig(
 |----------|---------|-------------|
 | `CURSORPIPE_AGENT_BIN` | `agent` | Path to the agent binary |
 | `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp`, `subprocess`, `auto` |
-| `CURSORPIPE_DEFAULT_MODE` | `ask` | ACP mode: `ask`, `agent`, `plan` |
+| `CURSORPIPE_DEFAULT_MODE` | `ask` | CLI mode: `ask` (pure LLM, no tools) or `plan`. `agent` is **not** valid — it crashes the server. |
 | `CURSORPIPE_REQUEST_TIMEOUT_S` | `300` | Per-request timeout in seconds |
 | `CURSORPIPE_ACP_STARTUP_TIMEOUT_S` | `30` | Max seconds for ACP startup |
 | `CURSORPIPE_ACP_MAX_RESTARTS` | `3` | Auto-restart attempts for crashed ACP |

@@ -67,12 +67,20 @@ Applies to both the server and direct Python library usage.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CURSORPIPE_STRATEGY` | `auto` | Transport: `acp` (persistent process, model auto-selected by Cursor), `subprocess` (per-request spawn, `--model` passed correctly), `auto` (smart routing — see note below) |
-| `CURSORPIPE_DEFAULT_MODE` | `ask` | Agent mode: `ask` (pure LLM, no tools), `agent` (full tools), `plan` |
+| `CURSORPIPE_DEFAULT_MODE` | `ask` | CLI mode: `ask` (pure LLM, no web/file/tool access), `plan` (planning/coding mode). **Do not use `agent`** — it is not a valid CLI mode and will crash the server. |
 | `CURSORPIPE_REQUEST_TIMEOUT_S` | `300` | Per-request timeout in seconds |
 | `CURSORPIPE_ACP_STARTUP_TIMEOUT_S` | `30` | Max seconds to wait for the ACP process to initialise |
 | `CURSORPIPE_ACP_MAX_RESTARTS` | `3` | How many times to auto-restart a crashed ACP process before giving up |
 | `CURSORPIPE_WORKSPACE` | `""` | Working directory passed to the agent. Empty = current directory at call time |
 | `CURSORPIPE_ENABLE_PROFILING` | `false` | Log timing diagnostics: TTFC, per-chunk inter-arrival, session acquire latency |
+
+!!! warning "CURSORPIPE_DEFAULT_MODE valid values"
+    Only `ask` and `plan` are accepted by the Cursor Agent CLI. Setting `CURSORPIPE_DEFAULT_MODE=agent` causes the agent process to exit with code 1 immediately, returning a `500 agent_crash` error on every request.
+
+    - **`ask`** (default) — pure LLM, no tools. Cannot browse URLs, read files, or run commands. Safe for a shared server.
+    - **`plan`** — planning/coding mode. Behaviour varies by CLI version.
+
+    If you need web/URL access or tool use, use **v2** instead (SDK-based; no mode restriction).
 
 !!! note "CURSORPIPE_STRATEGY=auto model routing"
     In `auto` mode, the transport is chosen per-request based on the `model` value you pass:

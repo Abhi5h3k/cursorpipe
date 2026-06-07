@@ -69,3 +69,4 @@ response = await client.generate(
 - [Examples](examples.md) — runnable scripts for every feature
 - [API Reference](api-reference.md) — full method and class documentation
 - [Architecture](architecture.md) — how ACP, subprocess, and HTTP transports work
+- [v1 vs v2](v1-vs-v2.md) — feature comparison and which version to choose
