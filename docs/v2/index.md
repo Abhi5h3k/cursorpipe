@@ -1,4 +1,4 @@
-﻿# cursorpipe v2
+# cursorpipe v2
 
 **OpenAI-compatible HTTP server powered by the official [Cursor Python SDK](https://cursor.com/docs/sdk/python).**
 
@@ -32,14 +32,14 @@ Point any OpenAI-compatible client at `http://localhost:8080` and use Cursor's f
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.3#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.4#subdirectory=v2"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.3#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.4#subdirectory=v2"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```

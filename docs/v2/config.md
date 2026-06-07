@@ -45,7 +45,7 @@ Copy `.env.example` to `.env` and edit it before starting the server.
 
 | Variable | Default | Description |
 |---|---|---|
-| `CURSORPIPE_EXPOSE_THINKING` | `false` | Expose model thinking/reasoning in responses (see [Thinking docs](thinking.md)) |
+| `CURSORPIPE_THINKING_LEVEL` | `off` | Request and surface thinking/reasoning. Accepted: `off`, `low`, `high`. See [Thinking docs](thinking.md). |
 
 ---
 
@@ -77,7 +77,7 @@ CURSORPIPE_WORKSPACE=.
 CURSORPIPE_SESSION_TTL_MINUTES=30
 
 # Features
-CURSORPIPE_EXPOSE_THINKING=false
+CURSORPIPE_THINKING_LEVEL=off
 
 # Logging
 CURSORPIPE_LOG_LEVEL=info
@@ -90,3 +90,4 @@ CURSORPIPE_LOG_LEVEL=info
 - Both `CURSOR_API_KEY` and `CURSORPIPE_API_KEY` are accepted for the API key. `CURSOR_API_KEY` is preferred — it matches the name the Cursor SDK itself uses. `CURSORPIPE_API_KEY` is supported for compatibility with v1.
 - The server refuses to start if `CURSOR_API_KEY` is not set — it will print a clear error with a link to generate a key.
 - When `CURSORPIPE_BEARER_TOKEN` is set, every request to `/v1/*` must include `Authorization: Bearer <token>`. The `/health` endpoint is always public.
+- `CURSORPIPE_THINKING_LEVEL` requests thinking from the SDK via `ModelParameterValue` — the model does not need a special name. Use `GET /v1/models` and check `cursor_parameters` to discover which models support it. The old `CURSORPIPE_EXPOSE_THINKING=true` still works and maps to `thinking_level=high`.

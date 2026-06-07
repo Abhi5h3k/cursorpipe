@@ -43,7 +43,7 @@ def main() -> None:
             try:
                 chunk = json.loads(data_str)
                 delta = chunk["choices"][0]["delta"]
-                # reasoning_content arrives before content when EXPOSE_THINKING=true
+                # reasoning_content arrives before content when CURSORPIPE_THINKING_LEVEL=low|high
                 if "reasoning_content" in delta and delta["reasoning_content"]:
                     print(f"[thinking] {delta['reasoning_content']}", end="", flush=True)
                 if "content" in delta and delta["content"]:

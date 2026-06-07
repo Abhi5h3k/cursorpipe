@@ -11,9 +11,11 @@ because the SDK Agent already holds the full conversation history internally.
 
 Thinking
 --------
-When CURSORPIPE_EXPOSE_THINKING=true, streaming chunks with type="thinking"
-are emitted as delta.reasoning_content before the regular delta.content chunks.
-Non-streaming responses include thinking in cursor_metadata.thinking.
+When CURSORPIPE_THINKING_LEVEL=low|high, the SDK is asked to think via
+ModelParameterValue(id="thinking", value=level). Streaming chunks with
+type="thinking" are emitted as delta.reasoning_content before the regular
+delta.content chunks. Non-streaming responses include thinking in
+cursor_metadata.thinking.
 """
 
 from __future__ import annotations
@@ -110,7 +112,7 @@ async def _handle_stateless(body: ChatCompletionRequest, model: str, cursor_clie
                 ChatCompletionChoice(
                     message=ChatCompletionMessage(
                         content=result.text,
-                        reasoning_content=result.thinking if settings.expose_thinking else None,
+                        reasoning_content=result.thinking if settings.thinking_param else None,
                     ),
                     finish_reason=result.finish_reason,  # type: ignore[arg-type]
                 )
@@ -180,7 +182,7 @@ async def _handle_stateful(
                 ChatCompletionChoice(
                     message=ChatCompletionMessage(
                         content=result.text,
-                        reasoning_content=result.thinking if settings.expose_thinking else None,
+                        reasoning_content=result.thinking if settings.thinking_param else None,
                     ),
                     finish_reason=result.finish_reason,  # type: ignore[arg-type]
                 )

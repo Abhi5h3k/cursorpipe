@@ -35,14 +35,14 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.3#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.4#subdirectory=v2"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.3#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.4#subdirectory=v2"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
@@ -154,7 +154,7 @@ All settings are read from environment variables (or `.env` file).
 | `CURSORPIPE_MODEL` | `composer-2.5` | Default model |
 | `CURSORPIPE_WORKSPACE` | `.` | Working directory for the agent |
 | `CURSORPIPE_SESSION_TTL_MINUTES` | `30` | Idle session expiry |
-| `CURSORPIPE_EXPOSE_THINKING` | `false` | Include thinking/reasoning in responses |
+| `CURSORPIPE_THINKING_LEVEL` | `off` | Request and surface thinking: `off`, `low`, or `high`. Backward compat: `CURSORPIPE_EXPOSE_THINKING=true` maps to `high`. |
 | `CURSORPIPE_LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warning`, `error`, `critical` |
 
 ---
@@ -336,7 +336,7 @@ Session list response shape:
 
 ### Thinking / reasoning content
 
-Set `CURSORPIPE_EXPOSE_THINKING=true` and use a model that supports thinking.
+Set `CURSORPIPE_THINKING_LEVEL=high` (or `low`) before starting the server. Thinking is requested via an SDK model parameter — no special model name needed. Check `GET /v1/models` → `cursor_parameters` to see which models support it.
 
 **Streaming** — thinking chunks arrive before content chunks:
 

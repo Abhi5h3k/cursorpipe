@@ -30,6 +30,7 @@ class TestConfig:
         monkeypatch.delenv("CURSORPIPE_HOST", raising=False)
         monkeypatch.delenv("CURSORPIPE_PORT", raising=False)
         monkeypatch.delenv("CURSORPIPE_EXPOSE_THINKING", raising=False)
+        monkeypatch.delenv("CURSORPIPE_THINKING_LEVEL", raising=False)
         monkeypatch.delenv("CURSORPIPE_LOG_LEVEL", raising=False)
         monkeypatch.delenv("CURSOR_API_KEY", raising=False)
 
@@ -38,7 +39,8 @@ class TestConfig:
         s = Settings(_env_file=None)
         assert s.host == "0.0.0.0"
         assert s.port == 8080
-        assert s.expose_thinking is False
+        assert s.thinking_level == "off"
+        assert s.thinking_param is None
         assert s.log_level == "info"
         assert s.bearer_token == ""
         assert s.model == "composer-2.5"

@@ -97,11 +97,29 @@ class ChatCompletionChunk(BaseModel):
 # ── Models endpoint ──────────────────────────────────────────────────────────────
 
 
+class ModelParamValueDef(BaseModel):
+    """One accepted value for a model parameter (e.g. value="high")."""
+
+    value: str
+    display_name: str = ""
+
+
+class ModelParamDef(BaseModel):
+    """A per-model parameter definition exposed by the Cursor SDK (e.g. thinking)."""
+
+    id: str
+    display_name: str = ""
+    values: list[ModelParamValueDef] = Field(default_factory=list)
+
+
 class ModelCard(BaseModel):
     id: str
     object: Literal["model"] = "model"
     created: int = Field(default_factory=lambda: int(time.time()))
     owned_by: str = "cursor"
+    # cursorpipe extension: per-model parameters from the SDK (e.g. thinking=low|high).
+    # Standard OpenAI clients will ignore this field.
+    cursor_parameters: list[ModelParamDef] = Field(default_factory=list)
 
 
 class ModelList(BaseModel):

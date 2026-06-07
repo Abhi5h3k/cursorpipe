@@ -12,10 +12,10 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from cursor_sdk import AgentOptions, LocalAgentOptions
+from cursor_sdk import AgentOptions, LocalAgentOptions, ModelParameterValue, ModelSelection
 
 from cursorpipe._config import settings
 
@@ -57,8 +57,18 @@ class StreamChunk:
 
 
 def _agent_options(model: str) -> AgentOptions:
+    """Build AgentOptions, requesting thinking via ModelSelection.params when enabled."""
+    thinking = settings.thinking_param
+    if thinking:
+        model_sel: str | ModelSelection = ModelSelection(
+            id=model,
+            params=[ModelParameterValue(id="thinking", value=thinking)],
+        )
+    else:
+        model_sel = model
+
     return AgentOptions(
-        model=model,
+        model=model_sel,
         api_key=settings.cursor_api_key or None,
         local=LocalAgentOptions(cwd=settings.workspace),
     )
@@ -154,8 +164,8 @@ async def complete(
             duration_ms=getattr(run, "duration_ms", 0) or 0,
             run_id=getattr(run, "id", None),
             agent_id=getattr(run, "agent_id", None),
-            thinking=thinking if settings.expose_thinking else None,
-            thinking_duration_ms=thinking_ms if settings.expose_thinking else 0,
+            thinking=thinking if settings.thinking_param else None,
+            thinking_duration_ms=thinking_ms if settings.thinking_param else 0,
         )
     finally:
         await _close_agent(agent)
@@ -175,7 +185,7 @@ async def stream_complete(
         run = await agent.send(prompt)
         async for message in run.messages():
             try:
-                if message.type == "thinking" and settings.expose_thinking:
+                if message.type == "thinking" and settings.thinking_param:
                     text = getattr(message, "text", "") or ""
                     ms = getattr(message, "thinking_duration_ms", 0) or 0
                     if text:
@@ -217,8 +227,8 @@ async def complete_stateful(
         duration_ms=getattr(run, "duration_ms", 0) or 0,
         run_id=getattr(run, "id", None),
         agent_id=getattr(run, "agent_id", None),
-        thinking=thinking if settings.expose_thinking else None,
-        thinking_duration_ms=thinking_ms if settings.expose_thinking else 0,
+        thinking=thinking if settings.thinking_param else None,
+        thinking_duration_ms=thinking_ms if settings.thinking_param else 0,
     )
 
 
@@ -230,7 +240,7 @@ async def stream_complete_stateful(
     run = await session_entry.agent.send(last_user_message)
     async for message in run.messages():
         try:
-            if message.type == "thinking" and settings.expose_thinking:
+            if message.type == "thinking" and settings.thinking_param:
                 text = getattr(message, "text", "") or ""
                 ms = getattr(message, "thinking_duration_ms", 0) or 0
                 if text:

@@ -1,20 +1,29 @@
 """cursorpipe v2 example: Thinking / reasoning content.
 
-When CURSORPIPE_EXPOSE_THINKING=true, the server exposes the model's
-internal reasoning as:
-  - Streaming: delta.reasoning_content chunks (before delta.content)
-  - Non-streaming: cursor_metadata.thinking field
+Demonstrates how to enable and consume thinking output from models that
+support it.
 
-This matches the pattern used by DeepSeek R1 and OpenAI o1 clients.
+How thinking works in cursorpipe v2
+------------------------------------
+Thinking is requested from the Cursor SDK via a model parameter:
+
+    ModelSelection(id="composer-2.5", params=[ModelParameterValue(id="thinking", value="high")])
+
+cursorpipe v2 handles this automatically when you set:
+
+    CURSORPIPE_THINKING_LEVEL=high   # or "low"
+
+in your .env file (or as an environment variable) before starting the server.
+The model does NOT need a special name — thinking is a parameter, not a separate
+model. Use /v1/models to discover which models on your account support it.
 
 Prerequisites:
-  - cursorpipe v2 server running with CURSORPIPE_EXPOSE_THINKING=true
-  - A model that supports thinking (e.g. claude-4.5-sonnet-thinking)
+  - cursorpipe v2 server running with CURSORPIPE_THINKING_LEVEL=high
   - CURSOR_API_KEY set in .env or environment
   - pip install requests
 
 Run:
-  CURSORPIPE_EXPOSE_THINKING=true python -m cursorpipe_server &
+  CURSORPIPE_THINKING_LEVEL=high python -m cursorpipe_server &
   python v2/examples/thinking.py
 """
 
@@ -23,72 +32,129 @@ import json
 import requests
 
 BASE_URL = "http://localhost:8080"
-MODEL = "claude-4.5-sonnet-thinking"
 
 
-def non_streaming_with_thinking() -> None:
-    print("=== Non-streaming with thinking ===\n")
-    response = requests.post(
+# ── Step 1: discover which models support thinking ────────────────────────────
+
+
+def get_thinking_models() -> list[dict]:
+    """Return models whose cursor_parameters include thinking=low|high."""
+    resp = requests.get(f"{BASE_URL}/v1/models", timeout=15)
+    resp.raise_for_status()
+    models = resp.json()["data"]
+    thinking_models = []
+    for m in models:
+        for param in m.get("cursor_parameters", []):
+            if param["id"] == "thinking":
+                thinking_models.append(
+                    {
+                        "id": m["id"],
+                        "thinking_values": [v["value"] for v in param.get("values", [])],
+                    }
+                )
+                break
+    return thinking_models
+
+
+# ── Step 2: non-streaming completion with thinking ────────────────────────────
+
+
+def non_streaming_thinking(model: str) -> None:
+    """Show thinking in cursor_metadata for a non-streaming request."""
+    print(f"\n=== Non-streaming thinking ({model}) ===\n")
+
+    resp = requests.post(
         f"{BASE_URL}/v1/chat/completions",
         json={
-            "model": MODEL,
-            "messages": [{"role": "user", "content": "What is 17 * 23? Show your work."}],
+            "model": model,
+            "messages": [{"role": "user", "content": "What is 17 × 23? Show your work."}],
         },
-        timeout=90,
+        timeout=120,
     )
-    response.raise_for_status()
-    data = response.json()
+    resp.raise_for_status()
+    body = resp.json()
 
-    meta = data.get("cursor_metadata", {})
+    print("Answer:", body["choices"][0]["message"]["content"])
+
+    meta = body.get("cursor_metadata", {})
     if meta.get("thinking"):
-        print(f"[Thinking] {meta['thinking'][:300]}...\n")
-        print(f"[Thinking duration: {meta.get('thinking_duration_ms', 0)}ms]\n")
+        print(f"\n[thinking] ({meta.get('thinking_duration_ms', 0)} ms)")
+        print(meta["thinking"])
+    else:
+        print(
+            "\n[no thinking] — either the model does not support it, "
+            "or CURSORPIPE_THINKING_LEVEL is 'off'."
+        )
 
-    content = data["choices"][0]["message"]["content"]
-    print(f"[Answer] {content}\n")
+
+# ── Step 3: streaming completion with thinking ────────────────────────────────
 
 
-def streaming_with_thinking() -> None:
-    print("=== Streaming with thinking ===\n")
+def streaming_thinking(model: str) -> None:
+    """Show thinking chunks arriving before content chunks in SSE stream."""
+    print(f"\n=== Streaming thinking ({model}) ===\n")
+
     with requests.post(
         f"{BASE_URL}/v1/chat/completions",
         json={
-            "model": MODEL,
+            "model": model,
             "stream": True,
-            "messages": [{"role": "user", "content": "What is 17 * 23?"}],
+            "messages": [
+                {"role": "user", "content": "Explain why the sky is blue in two sentences."}
+            ],
         },
         stream=True,
-        timeout=90,
-    ) as response:
-        response.raise_for_status()
-        in_thinking = False
-        for line in response.iter_lines():
-            if not line:
+        timeout=120,
+    ) as resp:
+        resp.raise_for_status()
+        for raw_line in resp.iter_lines():
+            if not raw_line:
                 continue
-            text = line.decode("utf-8") if isinstance(line, bytes) else line
-            if not text.startswith("data:"):
+            line = raw_line.decode() if isinstance(raw_line, bytes) else raw_line
+            if not line.startswith("data:"):
                 continue
-            data_str = text.removeprefix("data:").strip()
-            if data_str == "[DONE]":
-                print()
+            payload = line.removeprefix("data:").strip()
+            if payload == "[DONE]":
                 break
             try:
-                chunk = json.loads(data_str)
+                chunk = json.loads(payload)
                 delta = chunk["choices"][0]["delta"]
                 if delta.get("reasoning_content"):
-                    if not in_thinking:
-                        print("[Thinking] ", end="", flush=True)
-                        in_thinking = True
-                    print(delta["reasoning_content"], end="", flush=True)
-                if delta.get("content"):
-                    if in_thinking:
-                        print("\n[Answer] ", end="", flush=True)
-                        in_thinking = False
+                    print(f"[thinking] {delta['reasoning_content']}", end="", flush=True)
+                elif delta.get("content"):
                     print(delta["content"], end="", flush=True)
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, KeyError):
                 pass
+
+    print()  # newline after stream
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+
+def main() -> None:
+    print("=== cursorpipe v2 — Thinking / Reasoning Example ===")
+    print(
+        "\nNote: set CURSORPIPE_THINKING_LEVEL=high (or low) before starting the server.\n"
+    )
+
+    # Discover thinking-capable models
+    thinking_models = get_thinking_models()
+    if thinking_models:
+        print("Models with thinking support on your account:")
+        for m in thinking_models:
+            print(f"  {m['id']}  (levels: {', '.join(m['thinking_values'])})")
+        model = thinking_models[0]["id"]
+    else:
+        print(
+            "No models with thinking parameters found — falling back to composer-2.5.\n"
+            "cursor_parameters may be empty if the server is running without an API key."
+        )
+        model = "composer-2.5"
+
+    non_streaming_thinking(model)
+    streaming_thinking(model)
 
 
 if __name__ == "__main__":
-    non_streaming_with_thinking()
-    streaming_with_thinking()
+    main()
