@@ -36,12 +36,6 @@ class ChatCompletionRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class Usage(BaseModel):
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    total_tokens: int = 0
-
-
 class ChoiceMessage(BaseModel):
     role: Literal["assistant"] = "assistant"
     content: str
@@ -59,7 +53,6 @@ class ChatCompletionResponse(BaseModel):
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
     choices: list[Choice]
-    usage: Usage = Field(default_factory=Usage)
 
 
 # ---------------------------------------------------------------------------

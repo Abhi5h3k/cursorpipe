@@ -35,14 +35,14 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.5#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.6#subdirectory=v2"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.5#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.6#subdirectory=v2"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
@@ -217,12 +217,10 @@ Response includes a `cursor_metadata` field with Cursor-specific details:
   "object": "chat.completion",
   "model": "composer-2.5",
   "choices": [{"message": {"role": "assistant", "content": "4"}, "finish_reason": "stop"}],
-  "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
   "cursor_metadata": {
     "duration_ms": 1240,
     "run_id": "run_...",
-    "agent_id": "agent_...",
-    "session_id": null
+    "agent_id": "agent_..."
   }
 }
 ```
@@ -411,7 +409,7 @@ parameters are accepted in the request body and silently ignored.
 | `top_p` | None | Accepted but ignored |
 | `stop` sequences | None | Accepted but ignored |
 | `n > 1` (multiple completions) | None | Would need N parallel agents |
-| `usage.prompt_tokens` | None | SDK returns no token counts; always 0 |
+| `usage` (token counts) | None | SDK returns no token counts; `usage` field removed from responses |
 | `function_calling` / `tools` | None | SDK handles tools internally |
 | `logprobs` | None | Not applicable |
 | `POST /v1/embeddings` | None | No embedding API in the SDK |

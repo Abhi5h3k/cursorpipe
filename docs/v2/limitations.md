@@ -16,7 +16,7 @@ so existing clients never receive unexpected 422 errors.
 | `top_p` | None | Accepted but ignored. |
 | `stop` sequences | None | Accepted but ignored. |
 | `n` > 1 (multiple completions) | None | Only one completion per request. Would require N parallel agents. |
-| `usage.prompt_tokens` | None | SDK returns no token counts. `usage` fields are always 0. |
+| `usage` (token counts) | None | SDK returns no token counts. `usage` field removed from responses. |
 | `function_calling` / `tools` | None | The SDK handles tools internally. You cannot define custom tools. |
 | `logprobs` | None | Not applicable to Cursor models. |
 | `presence_penalty` / `frequency_penalty` | None | Accepted but ignored. |
@@ -41,7 +41,7 @@ so existing clients never receive unexpected 422 errors.
 
 | Feature | v2 behaviour |
 |---|---|
-| Token counts | Always `0`. The SDK does not return prompt or completion token counts. |
+| Token counts | Not available. The SDK does not return prompt or completion token counts. The `usage` field is omitted from responses. |
 | `finish_reason` | Always `"stop"`. The SDK does not distinguish length cutoffs from normal completion. |
 | `model` in response | The SDK resolves the model; if it returns a model ID, it is reflected in the response. Otherwise the requested model ID is echoed. |
 | Concurrent requests | Each stateless request creates a temporary SDK agent. Stateful sessions share one agent per session. There is no global concurrency limit in cursorpipe — the SDK and Cursor API impose their own limits. |

@@ -23,7 +23,6 @@ from cursorpipe_server.schemas import (
     ModelListResponse,
     ModelObject,
     StreamChoice,
-    Usage,
 )
 
 if TYPE_CHECKING:
@@ -76,7 +75,6 @@ async def chat_completions(req: ChatCompletionRequest, request: Request):
         choices=[
             Choice(message=ChoiceMessage(content=text)),
         ],
-        usage=Usage(),
     )
 
 

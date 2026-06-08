@@ -96,12 +96,10 @@ Any other OpenAI fields (`temperature`, `top_p`, `max_tokens`, etc.) are accepte
     "message": {"role": "assistant", "content": "Hello! How can I help?"},
     "finish_reason": "stop"
   }],
-  "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
   "cursor_metadata": {
     "duration_ms": 1240,
     "run_id": "run_abc123",
-    "agent_id": "agent_xyz",
-    "session_id": null
+    "agent_id": "agent_xyz"
   }
 }
 ```

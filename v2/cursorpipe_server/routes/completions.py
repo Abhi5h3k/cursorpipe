@@ -44,7 +44,6 @@ from cursorpipe_server.schemas import (
     CursorMetadata,
     DeltaMessage,
     StreamChoice,
-    UsageInfo,
 )
 
 router = APIRouter()
@@ -117,7 +116,6 @@ async def _handle_stateless(body: ChatCompletionRequest, model: str, cursor_clie
                     finish_reason=result.finish_reason,  # type: ignore[arg-type]
                 )
             ],
-            usage=UsageInfo(),
             cursor_metadata=CursorMetadata(
                 duration_ms=result.duration_ms,
                 run_id=result.run_id,
@@ -187,7 +185,6 @@ async def _handle_stateful(
                     finish_reason=result.finish_reason,  # type: ignore[arg-type]
                 )
             ],
-            usage=UsageInfo(),
             cursor_metadata=CursorMetadata(
                 duration_ms=result.duration_ms,
                 run_id=result.run_id,

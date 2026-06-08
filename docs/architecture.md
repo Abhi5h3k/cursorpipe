@@ -169,7 +169,7 @@ Relies on credentials stored by `agent login`. During ACP initialization, the `a
 
 ## Performance optimizations
 
-- **orjson fast-path** — optional Rust-backed JSON parser (~4.6x faster). Install with `pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"`.
+- **orjson fast-path** — optional Rust-backed JSON parser (~4.6x faster). Install with `pip install "cursorpipe[fast] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.3"`.
 - **Streaming overhaul** — uses `asyncio.wait()` to race chunk arrival against prompt completion, eliminating the 1s poll delay from the previous `wait_for` approach.
 - **256KB StreamReader buffer** — prevents backpressure stalls during burst chunk delivery.
 - **Profiling mode** — set `CURSORPIPE_ENABLE_PROFILING=true` to log time-to-first-chunk, per-chunk inter-arrival, and total streaming duration.

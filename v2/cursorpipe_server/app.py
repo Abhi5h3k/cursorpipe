@@ -16,6 +16,7 @@ The /health endpoint is always public.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -38,6 +39,8 @@ from cursorpipe_server.routes.completions import router as completions_router
 from cursorpipe_server.routes.health import router as health_router
 from cursorpipe_server.routes.models import router as models_router
 from cursorpipe_server.routes.sessions import router as sessions_router
+
+logger = logging.getLogger(__name__)
 
 try:
     from cursor_sdk import CursorAgentError
@@ -67,6 +70,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         store = SessionStore()
         store.start_cleanup()
         app.state.session_store = store
+
+        logger.info(
+            "cursorpipe-server v2 (SDK-based) ready on %s:%s",
+            settings.host,
+            settings.port,
+        )
 
         yield
 

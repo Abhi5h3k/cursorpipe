@@ -9,7 +9,7 @@ cursorpipe-server exposes an **OpenAI-compatible HTTP API** backed by the Cursor
 === "pip"
 
     ```bash
-    pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.2"
+    pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.3"
     ```
 
 === "From source"
@@ -110,17 +110,9 @@ OpenAI-compatible chat completions.
       "content": "An API is a set of rules ..."
     },
     "finish_reason": "stop"
-  }],
-  "usage": {
-    "prompt_tokens": 0,
-    "completion_tokens": 0,
-    "total_tokens": 0
-  }
+  }]
 }
 ```
-
-!!! note "Token counts"
-    Cursor does not report token usage, so `usage` fields are always zero.
 
 !!! info "Model field and transport routing"
     The `model` field controls which Cursor model is used, but the behaviour depends on `CURSORPIPE_STRATEGY`:

@@ -46,12 +46,6 @@ class ChatCompletionChoice(BaseModel):
     finish_reason: Literal["stop", "length"] = "stop"
 
 
-class UsageInfo(BaseModel):
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    total_tokens: int = 0
-
-
 class CursorMetadata(BaseModel):
     duration_ms: int = 0
     run_id: str | None = None
@@ -67,7 +61,6 @@ class ChatCompletionResponse(BaseModel):
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
     choices: list[ChatCompletionChoice]
-    usage: UsageInfo = Field(default_factory=UsageInfo)
     cursor_metadata: CursorMetadata = Field(default_factory=CursorMetadata)
 
 

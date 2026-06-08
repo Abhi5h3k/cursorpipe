@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await client.warmup(pool_size=server_cfg.pool_size)
     app.state.client = client
     logger.info(
-        "cursorpipe-server ready on %s:%s (pool_size=%s)",
+        "cursorpipe-server v1 (CLI-based) ready on %s:%s (pool_size=%s)",
         server_cfg.host,
         server_cfg.port,
         server_cfg.pool_size,
