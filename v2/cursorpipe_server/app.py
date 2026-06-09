@@ -72,7 +72,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.session_store = store
 
         logger.info(
-            "cursorpipe-server v2 (SDK-based) ready on %s:%s",
+            "cursorpipe-server v2 (SDK-based) ready on %s:%s\n\n"
+            "  Endpoints:\n"
+            "    POST   /v1/chat/completions   Chat completions (stream + non-stream)\n"
+            "    GET    /v1/models             List available models\n"
+            "    GET    /v1/sessions           List active sessions\n"
+            "    GET    /v1/sessions/{id}      Get session info\n"
+            "    POST   /v1/sessions           Create new session\n"
+            "    DELETE /v1/sessions/{id}      Close/evict session\n"
+            "    GET    /health                Health check\n",
             settings.host,
             settings.port,
         )

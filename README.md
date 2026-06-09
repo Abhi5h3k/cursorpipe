@@ -72,14 +72,14 @@ Works out of the box with OpenAI SDK, LangChain, LiteLLM, Open WebUI, LobeChat, 
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.3"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.4"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.3"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.4"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
@@ -89,7 +89,7 @@ Server starts on `http://localhost:8080` with OpenAI-compatible endpoints.
 ### 3. Python Library — async-first
 
 ```bash
-pip install "cursorpipe @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.3"
+pip install "cursorpipe @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.4"
 ```
 
 ```python

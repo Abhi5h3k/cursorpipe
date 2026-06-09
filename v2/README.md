@@ -35,14 +35,14 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.6#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.7#subdirectory=v2"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.6#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.7#subdirectory=v2"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
@@ -60,17 +60,19 @@ Pull the image that is automatically built on every push to `main`:
 
 ```bash
 # bash / macOS / Linux / WSL — pass a single env var
-docker run --rm -p 8080:8080 \
+docker run --rm -p 8080:8080 --pull always \
   -e CURSOR_API_KEY=crsr_your_key_here \
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 
 ```powershell
 # Windows (PowerShell)
-docker run --rm -p 8080:8080 `
+docker run --rm -p 8080:8080 --pull always `
   -e CURSOR_API_KEY=crsr_your_key_here `
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
+
+> **Tip:** `--pull always` ensures Docker fetches the latest image before starting, even if a local copy exists.
 
 For multiple settings, use an env file — cleaner than a long chain of `-e` flags:
 
@@ -79,7 +81,7 @@ For multiple settings, use an env file — cleaner than a long chain of `-e` fla
 cp v2/.env.example .env
 # → fill in CURSOR_API_KEY and any overrides
 
-docker run --rm -p 8080:8080 --env-file .env \
+docker run --rm -p 8080:8080 --pull always --env-file .env \
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 
@@ -88,7 +90,7 @@ docker run --rm -p 8080:8080 --env-file .env \
 Copy-Item v2\.env.example .env
 # → fill in CURSOR_API_KEY and any overrides
 
-docker run --rm -p 8080:8080 --env-file .env `
+docker run --rm -p 8080:8080 --pull always --env-file .env `
   ghcr.io/abhi5h3k/cursorpipe:latest
 ```
 

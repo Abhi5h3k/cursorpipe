@@ -69,7 +69,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await client.warmup(pool_size=server_cfg.pool_size)
     app.state.client = client
     logger.info(
-        "cursorpipe-server v1 (CLI-based) ready on %s:%s (pool_size=%s)",
+        "cursorpipe-server v1 (CLI-based) ready on %s:%s (pool_size=%s)\n\n"
+        "  Endpoints:\n"
+        "    POST   /v1/chat/completions   Chat completions (stream + non-stream)\n"
+        "    GET    /v1/models             List available models\n"
+        "    GET    /health                Health check\n",
         server_cfg.host,
         server_cfg.port,
         server_cfg.pool_size,

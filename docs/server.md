@@ -9,7 +9,7 @@ cursorpipe-server exposes an **OpenAI-compatible HTTP API** backed by the Cursor
 === "pip"
 
     ```bash
-    pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.3"
+    pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v0.1.4"
     ```
 
 === "From source"
