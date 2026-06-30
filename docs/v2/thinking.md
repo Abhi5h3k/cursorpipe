@@ -210,4 +210,78 @@ if thinking:
 - Only models that expose `thinking` in `cursor_parameters` produce `SDKThinkingMessage` events; for other models the setting has zero overhead.
 - When `CURSORPIPE_THINKING_LEVEL=off` (the default), `run.messages()` is still used internally — thinking events are simply discarded.
 - Non-streaming responses always put thinking in `cursor_metadata`, never in `choices[0].message.reasoning_content`, to keep the response fully OpenAI-compatible.
-- Thinking is a server-level setting — all requests use the same level. Per-request thinking level is not supported.
+- For per-request control, use `cursor_params` (see below) instead of the global setting.
+
+---
+
+## Per-request model parameters (`cursor_params`)
+
+`cursor_params` is a cursorpipe extension that lets you pass Cursor SDK model parameters on a per-request basis, overriding the global `CURSORPIPE_THINKING_LEVEL`.  Pass it via `extra_body` on any OpenAI-compatible client.
+
+Valid parameter IDs and values are listed in `GET /v1/models` → `cursor_parameters` for each model.
+
+### Claude — thinking + effort
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")
+
+response = client.chat.completions.create(
+    model="claude-opus-4-8",
+    messages=[{"role": "user", "content": "Explain quantum entanglement."}],
+    extra_body={"cursor_params": {"thinking": "true", "effort": "medium"}},
+)
+print(response.choices[0].message.content)
+```
+
+Available effort levels: `low`, `medium`, `high`, `xhigh`, `max`.
+
+### GPT — reasoning effort
+
+```python
+response = client.chat.completions.create(
+    model="gpt-5.5",
+    messages=[{"role": "user", "content": "Solve this step by step."}],
+    extra_body={"cursor_params": {"reasoning": "medium"}},
+)
+```
+
+Available reasoning levels: `none`, `low`, `medium`, `high`, `extra-high`.
+
+### Fast mode / context window
+
+```python
+response = client.chat.completions.create(
+    model="composer-2.5",
+    messages=[{"role": "user", "content": "Quick summary please."}],
+    extra_body={"cursor_params": {"fast": "true"}},
+)
+```
+
+### curl
+
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5.5",
+    "messages": [{"role": "user", "content": "Think carefully."}],
+    "cursor_params": {"reasoning": "high"}
+  }'
+```
+
+```powershell
+Invoke-RestMethod http://localhost:8080/v1/chat/completions `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{
+    "model": "gpt-5.5",
+    "messages": [{"role": "user", "content": "Think carefully."}],
+    "cursor_params": {"reasoning": "high"}
+  }'
+```
+
+### Priority
+
+`cursor_params` → overrides `CURSORPIPE_THINKING_LEVEL` → plain model string (no params)

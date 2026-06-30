@@ -211,6 +211,61 @@ class TestAgentOptions:
         params = {p.id: p.value for p in opts.model.params}
         assert params.get("thinking") == "low"
 
+    def test_cursor_params_creates_model_selection(self) -> None:
+        """Explicit cursor_params build ModelSelection regardless of THINKING_LEVEL."""
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        from cursor_sdk import ModelSelection
+        opts = client_mod._agent_options("gpt-5.5", cursor_params={"reasoning": "medium"})
+        assert isinstance(opts.model, ModelSelection)
+        assert opts.model.id == "gpt-5.5"
+        params = {p.id: p.value for p in opts.model.params}
+        assert params["reasoning"] == "medium"
+
+    def test_cursor_params_multiple_params_all_passed(self) -> None:
+        """Multiple cursor_params entries each become a ModelParameterValue."""
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        from cursor_sdk import ModelSelection
+        opts = client_mod._agent_options(
+            "claude-opus-4-8",
+            cursor_params={"thinking": "true", "effort": "medium"},
+        )
+        assert isinstance(opts.model, ModelSelection)
+        params = {p.id: p.value for p in opts.model.params}
+        assert params["thinking"] == "true"
+        assert params["effort"] == "medium"
+
+    def test_cursor_params_overrides_thinking_level(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """cursor_params must take priority over CURSORPIPE_THINKING_LEVEL."""
+        monkeypatch.setenv("CURSORPIPE_THINKING_LEVEL", "high")
+        monkeypatch.delenv("CURSORPIPE_EXPOSE_THINKING", raising=False)
+
+        import importlib
+        import cursorpipe._config as cfg_mod
+        importlib.reload(cfg_mod)
+        import cursorpipe._client as client_mod
+        importlib.reload(client_mod)
+
+        from cursor_sdk import ModelSelection
+        opts = client_mod._agent_options(
+            "claude-opus-4-8",
+            cursor_params={"effort": "low"},
+        )
+        assert isinstance(opts.model, ModelSelection)
+        params = {p.id: p.value for p in opts.model.params}
+        # cursor_params wins; global thinking=high must NOT bleed in
+        assert params.get("effort") == "low"
+        assert "thinking" not in params
+
 
 # =========================================================================
 # ModelCard cursor_parameters schema
@@ -548,6 +603,57 @@ class TestSchemas:
         )
         assert hasattr(resp, "cursor_metadata")
         assert resp.cursor_metadata.duration_ms == 0
+
+
+# =========================================================================
+# cursor_params request field
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestCursorParamsSchema:
+    """Tests for the cursor_params extension field on request models."""
+
+    def test_chat_request_cursor_params_none_by_default(self) -> None:
+        from cursorpipe_server.schemas import ChatCompletionRequest
+
+        req = ChatCompletionRequest(
+            model="composer-2.5",
+            messages=[{"role": "user", "content": "hi"}],
+        )
+        assert req.cursor_params is None
+
+    def test_chat_request_accepts_cursor_params(self) -> None:
+        from cursorpipe_server.schemas import ChatCompletionRequest
+
+        req = ChatCompletionRequest(
+            model="gpt-5.5",
+            messages=[{"role": "user", "content": "hi"}],
+            cursor_params={"reasoning": "medium"},
+        )
+        assert req.cursor_params == {"reasoning": "medium"}
+
+    def test_chat_request_accepts_multiple_cursor_params(self) -> None:
+        from cursorpipe_server.schemas import ChatCompletionRequest
+
+        req = ChatCompletionRequest(
+            model="claude-opus-4-8",
+            messages=[{"role": "user", "content": "hi"}],
+            cursor_params={"thinking": "true", "effort": "medium", "context": "1m"},
+        )
+        assert req.cursor_params == {"thinking": "true", "effort": "medium", "context": "1m"}
+
+    def test_create_session_request_cursor_params_none_by_default(self) -> None:
+        from cursorpipe_server.schemas import CreateSessionRequest
+
+        req = CreateSessionRequest(model="composer-2.5")
+        assert req.cursor_params is None
+
+    def test_create_session_request_accepts_cursor_params(self) -> None:
+        from cursorpipe_server.schemas import CreateSessionRequest
+
+        req = CreateSessionRequest(model="gpt-5.5", cursor_params={"reasoning": "high"})
+        assert req.cursor_params == {"reasoning": "high"}
 
 
 # =========================================================================

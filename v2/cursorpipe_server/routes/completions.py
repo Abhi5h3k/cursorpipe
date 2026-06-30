@@ -9,13 +9,11 @@ Header present, unknown ID     → stateful (create new agent, return ID in resp
 For stateful requests only the *last* user message is forwarded to agent.send()
 because the SDK Agent already holds the full conversation history internally.
 
-Thinking
---------
-When CURSORPIPE_THINKING_LEVEL=low|high, the SDK is asked to think via
-ModelParameterValue(id="thinking", value=level). Streaming chunks with
-type="thinking" are emitted as delta.reasoning_content before the regular
-delta.content chunks. Non-streaming responses include thinking in
-cursor_metadata.thinking.
+Thinking / cursor_params
+------------------------
+Per-request cursor_params (via extra_body) take priority over the global
+CURSORPIPE_THINKING_LEVEL. When either is active, thinking chunks arrive as
+delta.reasoning_content (streaming) or cursor_metadata.thinking (non-streaming).
 """
 
 from __future__ import annotations
@@ -34,7 +32,6 @@ from cursorpipe._client import (
     stream_complete,
     stream_complete_stateful,
 )
-from cursorpipe._config import settings
 from cursorpipe_server.schemas import (
     ChatCompletionChunk,
     ChatCompletionChoice,
@@ -96,14 +93,15 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
 
 async def _handle_stateless(body: ChatCompletionRequest, model: str, cursor_client):
     messages = _messages_as_dicts(body.messages)
+    cursor_params = body.cursor_params or None
 
     if body.stream:
         return EventSourceResponse(
-            _stateless_stream_generator(messages, model, cursor_client),
+            _stateless_stream_generator(messages, model, cursor_client, cursor_params),
             media_type="text/event-stream",
         )
 
-    result = await complete(messages, model, cursor_client)
+    result = await complete(messages, model, cursor_client, cursor_params)
     return JSONResponse(
         ChatCompletionResponse(
             model=result.actual_model or model,
@@ -111,7 +109,7 @@ async def _handle_stateless(body: ChatCompletionRequest, model: str, cursor_clie
                 ChatCompletionChoice(
                     message=ChatCompletionMessage(
                         content=result.text,
-                        reasoning_content=result.thinking if settings.thinking_param else None,
+                        reasoning_content=result.thinking or None,
                     ),
                     finish_reason=result.finish_reason,  # type: ignore[arg-type]
                 )
@@ -127,7 +125,12 @@ async def _handle_stateless(body: ChatCompletionRequest, model: str, cursor_clie
     )
 
 
-async def _stateless_stream_generator(messages: list[dict], model: str, cursor_client):
+async def _stateless_stream_generator(
+    messages: list[dict],
+    model: str,
+    cursor_client,
+    cursor_params: dict[str, str] | None = None,
+):
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
@@ -137,7 +140,7 @@ async def _stateless_stream_generator(messages: list[dict], model: str, cursor_c
         choices=[StreamChoice(delta=DeltaMessage(role="assistant"))],
     ).model_dump_json(exclude_none=True)}
 
-    async for chunk in stream_complete(messages, model, cursor_client):
+    async for chunk in stream_complete(messages, model, cursor_client, cursor_params):
         yield {"data": _chunk_to_sse(chunk, completion_id, created, model)}
 
     # Final stop chunk
@@ -159,9 +162,12 @@ async def _handle_stateful(
     session_store,
 ):
     last_msg = _last_user_message(body.messages)
+    cursor_params = body.cursor_params or None
     entry = await session_store.get(incoming_session_id)
     if entry is None:
-        entry = await session_store.get_or_create(incoming_session_id, model, cursor_client)
+        entry = await session_store.get_or_create(
+            incoming_session_id, model, cursor_client, cursor_params
+        )
 
     response_headers = {SESSION_HEADER: entry.session_id}
 
@@ -180,7 +186,7 @@ async def _handle_stateful(
                 ChatCompletionChoice(
                     message=ChatCompletionMessage(
                         content=result.text,
-                        reasoning_content=result.thinking if settings.thinking_param else None,
+                        reasoning_content=result.thinking or None,
                     ),
                     finish_reason=result.finish_reason,  # type: ignore[arg-type]
                 )

@@ -56,16 +56,28 @@ class StreamChunk:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _agent_options(model: str) -> AgentOptions:
-    """Build AgentOptions, requesting thinking via ModelSelection.params when enabled."""
-    thinking = settings.thinking_param
-    if thinking:
+def _agent_options(model: str, cursor_params: dict[str, str] | None = None) -> AgentOptions:
+    """Build AgentOptions with model parameters.
+
+    Priority:
+      1. Per-request cursor_params (explicit dict from request body)
+      2. Global CURSORPIPE_THINKING_LEVEL fallback (legacy thinking=low|high)
+      3. Plain model string when neither is set
+    """
+    if cursor_params:
         model_sel: str | ModelSelection = ModelSelection(
             id=model,
-            params=[ModelParameterValue(id="thinking", value=thinking)],
+            params=[ModelParameterValue(id=k, value=v) for k, v in cursor_params.items()],
         )
     else:
-        model_sel = model
+        thinking = settings.thinking_param
+        if thinking:
+            model_sel = ModelSelection(
+                id=model,
+                params=[ModelParameterValue(id="thinking", value=thinking)],
+            )
+        else:
+            model_sel = model
 
     return AgentOptions(
         model=model_sel,
@@ -141,12 +153,13 @@ async def complete(
     messages: list[dict],
     model: str | None,
     cursor_client: "AsyncClient",
+    cursor_params: dict[str, str] | None = None,
 ) -> CompletionResult:
     """One-shot stateless non-streaming completion."""
     effective_model = model or settings.model
     prompt, _ = _flatten_messages(messages)
 
-    agent = await cursor_client.agents.create(_agent_options(effective_model))
+    agent = await cursor_client.agents.create(_agent_options(effective_model, cursor_params))
     try:
         run = await agent.send(prompt)
         text, thinking, thinking_ms = await _collect_messages(run)
@@ -157,6 +170,7 @@ async def complete(
         if m is not None:
             actual_model = getattr(m, "id", None)
 
+        has_thinking = bool(cursor_params) or bool(settings.thinking_param)
         return CompletionResult(
             text=result_text,
             finish_reason=_map_status(getattr(run, "status", "finished")),
@@ -164,8 +178,8 @@ async def complete(
             duration_ms=getattr(run, "duration_ms", 0) or 0,
             run_id=getattr(run, "id", None),
             agent_id=getattr(run, "agent_id", None),
-            thinking=thinking if settings.thinking_param else None,
-            thinking_duration_ms=thinking_ms if settings.thinking_param else 0,
+            thinking=thinking if has_thinking else None,
+            thinking_duration_ms=thinking_ms if has_thinking else 0,
         )
     finally:
         await _close_agent(agent)
@@ -175,17 +189,19 @@ async def stream_complete(
     messages: list[dict],
     model: str | None,
     cursor_client: "AsyncClient",
+    cursor_params: dict[str, str] | None = None,
 ) -> AsyncIterator[StreamChunk]:
     """One-shot stateless streaming completion. Yields StreamChunk objects."""
     effective_model = model or settings.model
     prompt, _ = _flatten_messages(messages)
 
-    agent = await cursor_client.agents.create(_agent_options(effective_model))
+    has_thinking = bool(cursor_params) or bool(settings.thinking_param)
+    agent = await cursor_client.agents.create(_agent_options(effective_model, cursor_params))
     try:
         run = await agent.send(prompt)
         async for message in run.messages():
             try:
-                if message.type == "thinking" and settings.thinking_param:
+                if message.type == "thinking" and has_thinking:
                     text = getattr(message, "text", "") or ""
                     ms = getattr(message, "thinking_duration_ms", 0) or 0
                     if text:
