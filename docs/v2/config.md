@@ -91,3 +91,4 @@ CURSORPIPE_LOG_LEVEL=info
 - The server refuses to start if `CURSOR_API_KEY` is not set — it will print a clear error with a link to generate a key.
 - When `CURSORPIPE_BEARER_TOKEN` is set, every request to `/v1/*` must include `Authorization: Bearer <token>`. The `/health` endpoint is always public.
 - `CURSORPIPE_THINKING_LEVEL` requests thinking from the SDK via `ModelParameterValue` — the model does not need a special name. Use `GET /v1/models` and check `cursor_parameters` to discover which models support it. The old `CURSORPIPE_EXPOSE_THINKING=true` still works and maps to `thinking_level=high`.
+- For per-request control, pass `cursor_params` in the request body instead of (or in addition to overriding) `CURSORPIPE_THINKING_LEVEL`. `cursor_params` takes priority. See [Thinking / reasoning docs](thinking.md).

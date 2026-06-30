@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from cursor_sdk import LocalAgentOptions
+from cursor_sdk import LocalAgentOptions, ModelParameterValue, ModelSelection
 
 from cursorpipe._config import settings
 
@@ -80,6 +80,7 @@ class SessionStore:
         session_id: str,
         model: str,
         cursor_client: "AsyncClient",
+        cursor_params: dict[str, str] | None = None,
     ) -> SessionEntry:
         """Return an existing session or create a new Agent for *session_id*."""
         async with self._lock:
@@ -88,8 +89,16 @@ class SessionStore:
                 entry.touch()
                 return entry
 
+            if cursor_params:
+                model_sel = ModelSelection(
+                    id=model,
+                    params=[ModelParameterValue(id=k, value=v) for k, v in cursor_params.items()],
+                )
+            else:
+                model_sel = model  # type: ignore[assignment]
+
             agent = await cursor_client.agents.create(
-                model=model,
+                model=model_sel,
                 api_key=settings.cursor_api_key or None,
                 local=LocalAgentOptions(cwd=settings.workspace),
             )
@@ -97,10 +106,15 @@ class SessionStore:
             self._sessions[session_id] = entry
             return entry
 
-    async def create_new(self, model: str, cursor_client: "AsyncClient") -> SessionEntry:
+    async def create_new(
+        self,
+        model: str,
+        cursor_client: "AsyncClient",
+        cursor_params: dict[str, str] | None = None,
+    ) -> SessionEntry:
         """Create a fresh session with an auto-generated UUID."""
         session_id = str(uuid.uuid4())
-        return await self.get_or_create(session_id, model, cursor_client)
+        return await self.get_or_create(session_id, model, cursor_client, cursor_params)
 
     async def get(self, session_id: str) -> SessionEntry | None:
         async with self._lock:

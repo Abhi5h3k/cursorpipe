@@ -35,14 +35,14 @@ Point any OpenAI client at `http://localhost:8080` and use Cursor's models witho
 
 ```bash
 # bash / macOS / Linux / WSL
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.7#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.8#subdirectory=v2"
 export CURSOR_API_KEY=crsr_your_key_here
 cursorpipe-server
 ```
 
 ```powershell
 # Windows (PowerShell)
-pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.7#subdirectory=v2"
+pip install "cursorpipe[server] @ git+https://github.com/Abhi5h3k/cursorpipe.git@v2.0.8#subdirectory=v2"
 $env:CURSOR_API_KEY = "crsr_your_key_here"
 cursorpipe-server
 ```
@@ -340,7 +340,38 @@ Session list response shape:
 
 ### Thinking / reasoning content
 
-Set `CURSORPIPE_THINKING_LEVEL=high` (or `low`) before starting the server. Thinking is requested via an SDK model parameter — no special model name needed. Check `GET /v1/models` → `cursor_parameters` to see which models support it.
+Set `CURSORPIPE_THINKING_LEVEL=high` (or `low`) to enable thinking for all requests. For **per-request** control, pass `cursor_params` in the request body — this also works for models that use `reasoning` (GPT) or `effort` (Claude) instead of `thinking`. Check `GET /v1/models` → `cursor_parameters` to see which parameters each model supports.
+
+**Per-request via OpenAI SDK `extra_body`:**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")
+
+# GPT — reasoning effort
+client.chat.completions.create(
+    model="gpt-5.5",
+    messages=[{"role": "user", "content": "Solve this."}],
+    extra_body={"cursor_params": {"reasoning": "medium"}},
+)
+
+# Claude — thinking + effort
+client.chat.completions.create(
+    model="claude-opus-4-8",
+    messages=[{"role": "user", "content": "Explain quantum entanglement."}],
+    extra_body={"cursor_params": {"thinking": "true", "effort": "medium"}},
+)
+
+# Fast mode
+client.chat.completions.create(
+    model="composer-2.5",
+    messages=[{"role": "user", "content": "Quick summary."}],
+    extra_body={"cursor_params": {"fast": "true"}},
+)
+```
+
+`cursor_params` takes priority over `CURSORPIPE_THINKING_LEVEL`. See `docs/v2/thinking.md` for the full reference.
 
 **Streaming** — thinking chunks arrive before content chunks:
 

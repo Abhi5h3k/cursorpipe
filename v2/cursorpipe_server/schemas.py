@@ -29,6 +29,11 @@ class ChatCompletionRequest(BaseModel):
     stream: bool = False
     temperature: float | None = None
     max_tokens: int | None = None
+    # cursorpipe extension: per-request Cursor SDK model parameters.
+    # Pass via OpenAI SDK as extra_body={"cursor_params": {"reasoning": "medium"}}.
+    # Keys/values must match those listed in GET /v1/models → cursor_parameters.
+    # Takes priority over the global CURSORPIPE_THINKING_LEVEL setting.
+    cursor_params: dict[str, str] | None = None
 
 
 # ── Non-streaming response ───────────────────────────────────────────────────────
@@ -138,3 +143,5 @@ class SessionList(BaseModel):
 class CreateSessionRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     model: str = Field(default="composer-2.5")
+    # cursorpipe extension: Cursor SDK model parameters to apply for this session.
+    cursor_params: dict[str, str] | None = None

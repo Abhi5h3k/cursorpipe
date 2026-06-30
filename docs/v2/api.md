@@ -71,7 +71,8 @@ OpenAI-compatible chat completions. Supports streaming and non-streaming, statel
     {"role": "system", "content": "You are a helpful assistant."},
     {"role": "user", "content": "Hello!"}
   ],
-  "stream": false
+  "stream": false,
+  "cursor_params": {"reasoning": "medium"}
 }
 ```
 
@@ -80,8 +81,18 @@ OpenAI-compatible chat completions. Supports streaming and non-streaming, statel
 | `model` | string | Model ID. Defaults to `CURSORPIPE_MODEL` if omitted. |
 | `messages` | array | Required. Array of `{role, content}` objects. |
 | `stream` | boolean | `true` for SSE streaming, `false` for a single response. Default: `false`. |
+| `cursor_params` | object | Optional. Per-request Cursor SDK model parameters. Keys and values must match the model's `cursor_parameters` from `GET /v1/models`. Takes priority over `CURSORPIPE_THINKING_LEVEL`. |
 
 Any other OpenAI fields (`temperature`, `top_p`, `max_tokens`, etc.) are accepted and ignored.
+
+**`cursor_params` examples by model family:**
+
+| Model family | Example |
+|---|---|
+| GPT (`gpt-5.5`, `gpt-5.4` …) | `{"reasoning": "medium"}` — values: `none`, `low`, `medium`, `high`, `extra-high` |
+| Claude (`claude-opus-4-8` …) | `{"thinking": "true", "effort": "medium"}` — effort: `low`, `medium`, `high`, `xhigh`, `max` |
+| Composer (`composer-2.5`) | `{"fast": "true"}` or `{"fast": "false"}` |
+| Any model with large context | `{"context": "1m"}` |
 
 ### Non-streaming response
 
@@ -216,7 +227,7 @@ Explicitly create a new session and return its ID. Useful when you want to pre-c
 # bash / macOS / Linux / WSL
 curl -X POST http://localhost:8080/v1/sessions \
   -H "Content-Type: application/json" \
-  -d '{"model":"composer-2.5"}'
+  -d '{"model":"gpt-5.5","cursor_params":{"reasoning":"medium"}}'
 ```
 
 ```powershell
@@ -224,7 +235,7 @@ curl -X POST http://localhost:8080/v1/sessions \
 Invoke-RestMethod http://localhost:8080/v1/sessions `
   -Method Post `
   -ContentType "application/json" `
-  -Body '{"model":"composer-2.5"}'
+  -Body '{"model":"gpt-5.5","cursor_params":{"reasoning":"medium"}}'
 ```
 
 ```json

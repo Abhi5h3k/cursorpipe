@@ -68,7 +68,7 @@ async def create_session(body: CreateSessionRequest, request: Request) -> Sessio
     store = request.app.state.session_store
     model = body.model or settings.model
 
-    entry = await store.create_new(model, cursor_client)
+    entry = await store.create_new(model, cursor_client, body.cursor_params or None)
     return SessionInfo(
         id=entry.session_id,
         model=entry.model,

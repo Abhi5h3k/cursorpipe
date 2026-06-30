@@ -350,3 +350,74 @@ class TestSessionEndpoints:
         await app_client.post("/v1/sessions", json={"model": "composer-2.5"})
         response = await app_client.get("/v1/sessions")
         assert len(response.json()["data"]) >= 1
+
+
+# =========================================================================
+# cursor_params — per-request Cursor model parameters
+# =========================================================================
+
+
+@pytest.mark.unit
+class TestCursorParams:
+    """cursor_params extension field is accepted and forwarded to the SDK."""
+
+    _base = {"model": "gpt-5.5", "messages": [{"role": "user", "content": "hi"}]}
+
+    async def test_non_streaming_accepts_cursor_params(self, app_client) -> None:
+        """cursor_params must not cause a 422 and must return 200."""
+        response = await app_client.post(
+            "/v1/chat/completions",
+            json={**self._base, "cursor_params": {"reasoning": "medium"}},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["object"] == "chat.completion"
+
+    async def test_non_streaming_cursor_params_reach_sdk(
+        self, app_client, mock_cursor_client
+    ) -> None:
+        """SDK agents.create must be called with a ModelSelection carrying cursor_params."""
+        await app_client.post(
+            "/v1/chat/completions",
+            json={**self._base, "cursor_params": {"reasoning": "medium"}},
+        )
+        from cursor_sdk import ModelSelection
+
+        # _agent_options passes an AgentOptions object as the sole positional arg
+        create_args = mock_cursor_client.agents.create.call_args
+        agent_options = create_args.args[0]
+        assert isinstance(agent_options.model, ModelSelection), (
+            "Expected ModelSelection when cursor_params is provided"
+        )
+        params = {p.id: p.value for p in agent_options.model.params}
+        assert params.get("reasoning") == "medium"
+
+    async def test_streaming_accepts_cursor_params(self, app_client) -> None:
+        """Streaming with cursor_params must return valid SSE."""
+        response = await app_client.post(
+            "/v1/chat/completions",
+            json={**self._base, "stream": True, "cursor_params": {"reasoning": "high"}},
+        )
+        assert response.status_code == 200
+        assert "[DONE]" in response.text
+
+    async def test_stateful_first_request_with_cursor_params(self, app_client) -> None:
+        """First stateful request with cursor_params creates a session and echoes the header."""
+        response = await app_client.post(
+            "/v1/chat/completions",
+            headers={"X-Cursor-Session-ID": "sess-params"},
+            json={**self._base, "cursor_params": {"fast": "true"}},
+        )
+        assert response.status_code == 200
+        assert response.headers.get("x-cursor-session-id") == "sess-params"
+
+    async def test_explicit_session_creation_with_cursor_params(self, app_client) -> None:
+        """POST /v1/sessions with cursor_params must succeed and return session info."""
+        response = await app_client.post(
+            "/v1/sessions",
+            json={"model": "gpt-5.5", "cursor_params": {"reasoning": "low"}},
+        )
+        assert response.status_code == 201
+        body = response.json()
+        assert "id" in body
+        assert body["model"] == "gpt-5.5"
